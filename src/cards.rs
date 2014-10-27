@@ -6,6 +6,7 @@ pub trait Card {
     fn value(&self) -> &value::Value;
 }
 
+// Can I pass a ref?  Or pointer?
 pub struct CardImpl {
     pub v: value::ValueImpl,
     pub s: suit::SuitImpl,
