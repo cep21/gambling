@@ -1,0 +1,5 @@
+[package]
+
+name = "cards"
+version = "0.0.1"
+authors = ["Jack Lindamood <jack@signalfuse.com>"]
