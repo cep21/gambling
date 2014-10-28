@@ -6,7 +6,7 @@ use shoe::DirectShoe;
 use std::rand;
 
 pub trait SuitPicker {
-    fn suit(&mut self) -> Option<suit::Suit>;
+    fn suit(&mut self) -> Option<&suit::Suit>;
 }
 
 struct CycleSuitPicker {
@@ -14,9 +14,10 @@ struct CycleSuitPicker {
 }
 
 impl SuitPicker for CycleSuitPicker {
-    fn suit(&mut self) -> &suit::Suit {
+    fn suit(&mut self) -> Option<&suit::Suit> {
         self.suitIndex += 1;
-        return Some(suit::SUITS[self.suitIndex % 4]);
+        let r:&suit::Suit = &suit::SUITS[self.suitIndex % 4];
+        return Some(r);
     }
 }
 
@@ -30,7 +31,7 @@ struct RandomDeckSuitPicker {
 }
 
 impl SuitPicker for RandomDeckSuitPicker {
-    fn suit(&mut self) -> Option<suit::Suit> {
+    fn suit(&mut self) -> Option<&suit::Suit> {
         if self.suitCounts.len() == 0 {
             return None;
         }
@@ -46,23 +47,24 @@ impl SuitPicker for RandomDeckSuitPicker {
             }
         };
         match remove_index {
-            Some(i) => self.suitCounts.remove(i),
+            Some(i) => {self.suitCounts.remove(i);()},
             None => (),
-        }
-        return Some(suitToRet);
+        };
+        let r:&suit::Suit = &suitToRet;
+        return Some(r);
     }
 }
 
 pub trait ValuePicker {
-    fn value(&mut self) -> Option<value::Value>;
+    fn value(&mut self) -> Option<&value::Value>;
 }
 
 struct RandomValuePicker;
 
 impl ValuePicker for RandomValuePicker {
-    fn value(&mut self) -> Option<value::Value> {
+    fn value(&mut self) -> Option<&value::Value> {
         let valueIndex = rand::random::<uint>() % value::VALUES.len();
-        return Some(value::VALUES[valueIndex]);
+        return Some(&value::VALUES[valueIndex] as &value::Value);
     }
 }
 
@@ -76,79 +78,35 @@ struct RandomDeckValuePicker {
 }
 
 impl ValuePicker for RandomDeckValuePicker {
-    fn value(&mut self) -> Option<value::Value> {
+    fn value(&mut self) -> Option<&value::Value> {
         if self.valueCounts.len() == 0 {
             return None;
         }
         let (valueToRet, remove_index) = {
             let valueIndex = rand::random::<uint>() % self.valueCounts.len();
             let ref mut valueToLook = self.valueCounts.get_mut(valueIndex);
-            let valueoRet = valueToLook.suit;
+            let valueToRet = valueToLook.value;
             valueToLook.counts -= 1;
             if valueToLook.counts == 0 {
-                (valuToRet, Some(valueIndex))
+                (valueToRet, Some(valueIndex))
             } else {
                 (valueToRet, None)
             }
         };
         match remove_index {
-            Some(i) => self.valueCounts.remove(i),
+            Some(i) => {self.valueCounts.remove(i);()},
             None => (),
         }
-        return Some(valueToRet);
+        return Some(&valueToRet as &value::Value);
     }
 }
 
-
-pub struct DirectRandomShoe {
-   cardCounts: Vec<ValueCount>,
-   len: uint,
+pub struct GenericShoe<'a> {
+    valuePicker: &'a mut ValuePicker + 'a,
+    suitPickers: [&'a mut SuitPicker + 'a, ..13],
 }
-
+/*
 impl shoe::DirectShoe for DirectRandomShoe {
-    fn pop(&mut self) -> Option<cards::CardImpl> {
-        if self.len == 0 {
-            return None;
-        }
-        // TODO: must be better way than % rand
-        let cardIndex = rand::random::<uint>() % self.cardCounts.len();
-        let (valueToRet, suitToRet, remove_value_index) = {
-            let ref mut cardToLook = self.cardCounts.get_mut(cardIndex);
-            let valueToRet = cardToLook.value;
-            cardToLook.counts -= 1;
-
-            let suitIndex = rand::random::<uint>() % cardToLook.suitCounts.len();
-            let (suitToRet, remove_index) = {
-                let ref mut suitToLook = cardToLook.suitCounts.get_mut(suitIndex);
-                let suitToRet = suitToLook.suit;
-                suitToLook.counts -= 1;
-                if suitToLook.counts == 0 {
-                    (suitToRet, true)
-                } else {
-                    (suitToRet, false)
-                }
-            };
-            if remove_index {
-                cardToLook.suitCounts.remove(suitIndex);
-            }
-            if cardToLook.counts == 0 {
-                (valueToRet, suitToRet, true)
-            } else {
-                (valueToRet, suitToRet, false)
-            }
-        };
-        if remove_value_index {
-            self.cardCounts.remove(cardIndex);
-        }
-        self.len -= 1;
-        return Some(cards::CardImpl{
-            v: valueToRet,
-            s: suitToRet,
-        });
-    }
-    fn len(&self) -> uint {
-        return self.len;
-    }
 }
 
 impl DirectRandomShoe {
@@ -182,3 +140,4 @@ fn test_random() {
     let mut randDeck = DirectRandomShoe::new(1);
     shoe::test_single_deck(&mut randDeck);
 }
+*/
