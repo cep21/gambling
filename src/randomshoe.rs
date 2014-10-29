@@ -3,10 +3,11 @@ use cards;
 use suit;
 use value;
 use shoe::DirectShoe;
+use value::Value;
 use std::rand;
 
 pub trait SuitPicker {
-    fn suit(&mut self) -> Option<&suit::Suit>;
+    fn suit(&mut self) -> Option<suit::SuitImpl>;
 }
 
 struct CycleSuitPicker {
@@ -14,10 +15,9 @@ struct CycleSuitPicker {
 }
 
 impl SuitPicker for CycleSuitPicker {
-    fn suit(&mut self) -> Option<&suit::Suit> {
+    fn suit(&mut self) -> Option<suit::SuitImpl> {
         self.suitIndex += 1;
-        let r:&suit::Suit = &suit::SUITS[self.suitIndex % 4];
-        return Some(r);
+        return Some(suit::SUITS[self.suitIndex % 4]);
     }
 }
 
@@ -31,7 +31,7 @@ struct RandomDeckSuitPicker {
 }
 
 impl SuitPicker for RandomDeckSuitPicker {
-    fn suit(&mut self) -> Option<&suit::Suit> {
+    fn suit(&mut self) -> Option<suit::SuitImpl> {
         if self.suitCounts.len() == 0 {
             return None;
         }
@@ -50,21 +50,20 @@ impl SuitPicker for RandomDeckSuitPicker {
             Some(i) => {self.suitCounts.remove(i);()},
             None => (),
         };
-        let r:&suit::Suit = &suitToRet;
-        return Some(r);
+        return Some(suitToRet);
     }
 }
 
 pub trait ValuePicker {
-    fn value(&mut self) -> Option<&value::Value>;
+    fn value(&mut self) -> Option<value::ValueImpl>;
 }
 
 struct RandomValuePicker;
 
 impl ValuePicker for RandomValuePicker {
-    fn value(&mut self) -> Option<&value::Value> {
+    fn value(&mut self) -> Option<value::ValueImpl> {
         let valueIndex = rand::random::<uint>() % value::VALUES.len();
-        return Some(&value::VALUES[valueIndex] as &value::Value);
+        return Some(value::VALUES[valueIndex]);
     }
 }
 
@@ -78,7 +77,7 @@ struct RandomDeckValuePicker {
 }
 
 impl ValuePicker for RandomDeckValuePicker {
-    fn value(&mut self) -> Option<&value::Value> {
+    fn value(&mut self) -> Option<value::ValueImpl> {
         if self.valueCounts.len() == 0 {
             return None;
         }
@@ -97,41 +96,33 @@ impl ValuePicker for RandomDeckValuePicker {
             Some(i) => {self.valueCounts.remove(i);()},
             None => (),
         }
-        return Some(&valueToRet as &value::Value);
+        return Some(valueToRet);
     }
 }
 
-pub struct GenericShoe<'a> {
+pub struct GenericDirectShoe<'a> {
     valuePicker: &'a mut ValuePicker + 'a,
     suitPickers: [&'a mut SuitPicker + 'a, ..13],
-}
-/*
-impl shoe::DirectShoe for DirectRandomShoe {
+    len: uint,
 }
 
-impl DirectRandomShoe {
-    fn new(numDeck: uint) ->  DirectRandomShoe {
-        let mut c = Vec::new();
-        for &v in value::VALUES.iter() {
-            let mut sc = Vec::new();
-            for &s in suit::SUITS.iter() {
-                let scount = SuitCount {
-                    suit: s,
-                    counts: numDeck,
-                };
-                sc.push(scount);
-            }
-            let vc = ValueCount{
-                value: v,
-                counts: numDeck * 4,
-                suitCounts: sc,
-            };
-            c.push(vc);
-        }
-        return DirectRandomShoe{
-            len: numDeck * 52,
-            cardCounts: c,
+impl <'a>shoe::DirectShoe for GenericDirectShoe<'a> {
+    fn pop(&mut self) -> Option<cards::CardImpl> {
+        return match self.valuePicker.value() {
+            Some(v) => {
+                let ref mut picker = self.suitPickers[v.index()];
+                match picker.suit() {
+                    Some(s) => Some(cards::CardImpl::new(v, s)),
+                    None => None
+                }
+            },
+            None => {
+                None
+            },
         };
+    }
+    fn len(&self) -> uint {
+        return self.len;
     }
 }
 
@@ -140,4 +131,3 @@ fn test_random() {
     let mut randDeck = DirectRandomShoe::new(1);
     shoe::test_single_deck(&mut randDeck);
 }
-*/

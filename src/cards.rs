@@ -20,3 +20,12 @@ impl Card for CardImpl {
         return &self.v;
     }
 }
+
+impl CardImpl {
+    pub fn new(v: value::ValueImpl, s: suit::SuitImpl) -> CardImpl {
+        return CardImpl {
+            v: v,
+            s: s,
+        };
+    }
+}

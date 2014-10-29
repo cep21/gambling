@@ -17,17 +17,6 @@ impl Value for ValueImpl {
     }
 }
 
-/*
-impl PartialEq for Value {
-    fn eq(&self, other: &Value) -> bool {
-        return self.desc() == other.desc();
-    }
-    fn ne(&self, other: &Value) -> bool {
-        return !self.eq(other);
-    }
-}
-*/
-
 pub const ACE: ValueImpl = ValueImpl{desc:"ace", i:0};
 pub const TWO: ValueImpl = ValueImpl{desc:"two", i:1};
 pub const THREE: ValueImpl = ValueImpl{desc:"three", i:2};
