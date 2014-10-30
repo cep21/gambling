@@ -21,6 +21,9 @@ impl <'a>shoe::DirectShoe for CardShoeTracker<'a> {
     fn len(&self) -> uint {
         return self.wrapping.len();
     }
+    fn count(&self, v: &value::Value) -> uint {
+        return self.wrapping.count(v);
+    }
 }
 
 impl <'a>CardShoeTracker<'a> {

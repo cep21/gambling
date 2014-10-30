@@ -7,3 +7,5 @@ pub mod shoe;
 mod directshoe;
 mod randomshoe;
 mod cardshoetracker;
+mod hand;
+mod dealer;

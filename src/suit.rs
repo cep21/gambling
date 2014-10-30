@@ -23,10 +23,10 @@ impl Suit for SuitImpl {
     }
 }
 
-const SPADE: SuitImpl = SuitImpl{desc:"spade", c: &color::BLACK, i: 0};
-const CLUB: SuitImpl = SuitImpl{desc:"club", c: &color::BLACK, i: 1};
-const HEART: SuitImpl = SuitImpl{desc:"heart", c: &color::RED, i:2};
-const DIAMOND: SuitImpl = SuitImpl{desc:"diamond", c: &color::RED, i:3};
+pub const SPADE: SuitImpl = SuitImpl{desc:"spade", c: &color::BLACK, i: 0};
+pub const CLUB: SuitImpl = SuitImpl{desc:"club", c: &color::BLACK, i: 1};
+pub const HEART: SuitImpl = SuitImpl{desc:"heart", c: &color::RED, i:2};
+pub const DIAMOND: SuitImpl = SuitImpl{desc:"diamond", c: &color::RED, i:3};
 
 pub const SUITS: [SuitImpl, ..4] = [SPADE, CLUB, HEART, DIAMOND];
 

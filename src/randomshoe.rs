@@ -56,6 +56,7 @@ impl SuitPicker for RandomDeckSuitPicker {
 
 pub trait ValuePicker {
     fn value(&mut self) -> Option<value::ValueImpl>;
+    fn count(&self, v: &value::Value) -> uint;
 }
 
 struct RandomValuePicker;
@@ -64,6 +65,10 @@ impl ValuePicker for RandomValuePicker {
     fn value(&mut self) -> Option<value::ValueImpl> {
         let valueIndex = rand::random::<uint>() % value::VALUES.len();
         return Some(value::VALUES[valueIndex]);
+    }
+    fn count(&self, v: &value::Value) -> uint {
+        // Assumes full single deck
+        return 4;
     }
 }
 
@@ -74,6 +79,7 @@ struct ValueCount {
 
 struct RandomDeckValuePicker {
     valueCounts: Vec<ValueCount>,
+    indexedValueCounts: [ValueCount, ..13],
 }
 
 impl ValuePicker for RandomDeckValuePicker {
@@ -98,6 +104,9 @@ impl ValuePicker for RandomDeckValuePicker {
         }
         return Some(valueToRet);
     }
+    fn count(&self, v: &value::Value) -> uint {
+        return self.indexedValueCounts[v.index()].counts;
+    }
 }
 
 pub struct GenericDirectShoe<'a> {
@@ -106,13 +115,26 @@ pub struct GenericDirectShoe<'a> {
     len: uint,
 }
 
+impl <'a>GenericDirectShoe<'a> {
+    fn new(valuePicker: &'a mut ValuePicker, suitPickers: [&'a mut SuitPicker, ..13], len: uint) -> GenericDirectShoe<'a> {
+        return GenericDirectShoe {
+            valuePicker: valuePicker,
+            suitPickers: suitPickers,
+            len: len,
+        }
+    }
+}
+
 impl <'a>shoe::DirectShoe for GenericDirectShoe<'a> {
     fn pop(&mut self) -> Option<cards::CardImpl> {
         return match self.valuePicker.value() {
             Some(v) => {
                 let ref mut picker = self.suitPickers[v.index()];
                 match picker.suit() {
-                    Some(s) => Some(cards::CardImpl::new(v, s)),
+                    Some(s) => {
+                        self.len -= 1;
+                        Some(cards::CardImpl::new(v, s))
+                    },
                     None => None
                 }
             },
@@ -124,10 +146,13 @@ impl <'a>shoe::DirectShoe for GenericDirectShoe<'a> {
     fn len(&self) -> uint {
         return self.len;
     }
+    fn count(&self, v: &value::Value) -> uint {
+        return self.valuePicker.count(v);
+    }
 }
 
 #[test]
 fn test_random() {
-    let mut randDeck = DirectRandomShoe::new(1);
-    shoe::test_single_deck(&mut randDeck);
+//    let mut randDeck = DirectRandomShoe::new(1);
+//    shoe::test_single_deck(&mut randDeck); 
 }
