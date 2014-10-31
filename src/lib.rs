@@ -8,9 +8,8 @@ pub mod shoe {
     pub mod deck;
     pub mod shoe;
     pub mod directshoe;
+    mod randomshoe;
 }
 mod hand;
 pub mod cardshoetracker;
-/*pub mod shoe;
-mod randomshoe;
-mod dealer;*/
+mod dealer;

@@ -1,9 +1,9 @@
-use cards;
 use cards::card::CardImpl;
 use cards::card::Card;
 use cards::value;
 use cards::card;
 use shoe::shoe;
+use shoe::deck::cards_in_deck;
 use shoe::shoe::DirectShoe;
 
 pub struct DirectActualShoe<'a> {
@@ -43,7 +43,7 @@ fn test_direct() {
     assert_eq!(0, ds.len());
 
     let v2 = &mut Vec::new();
-    let mut ds2 = DirectActualShoe::new(deck::cards_in_deck(1, v2));
+    let mut ds2 = DirectActualShoe::new(cards_in_deck(1, v2));
 
     shoe::test_single_deck(&mut ds2);
 }
