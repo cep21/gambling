@@ -1,9 +1,9 @@
 use cards;
-use value;
-use suit;
-use value::Value;
-use cards::CardImpl;
-use cards::Card;
+use cards::value;
+use cards::suit;
+use cards::value::Value;
+use cards::card::CardImpl;
+use cards::card::Card;
 
 pub const INDEX_TO_SCORE: [uint, ..13] = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 pub fn scoreForValue(v: &Value) -> uint {

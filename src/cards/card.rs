@@ -1,5 +1,5 @@
-use suit;
-use value;
+use cards::suit;
+use cards::value;
 
 pub trait Card {
     fn suit(&self) -> &suit::Suit;

@@ -1,4 +1,4 @@
-use color;
+use cards::color;
 pub trait Suit {
     fn color(&self) -> &color::Color;
     fn desc(&self) -> &str;

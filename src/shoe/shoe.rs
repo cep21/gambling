@@ -1,19 +1,19 @@
-use cards;
-use value;
+use cards::value::Value;
+use cards::value;
+use cards::card::CardImpl;
 
 pub trait DirectShoe {
-    fn pop(&mut self) -> Option<cards::CardImpl>;
+    fn pop(&mut self) -> Option<CardImpl>;
     fn len(&self) -> uint;
-    fn count(&self, v: &value::Value) -> uint;
+    fn count(&self, v: &Value) -> uint;
 }
 
 // TODO: define only for test?
 pub fn test_single_deck(dsInput: &mut DirectShoe) {
-    use cards::Card;
-    use value::Value;
+    use cards::card::Card;
+    use cards::value::Value;
     use cardshoetracker;
     use cardshoetracker::CardShoeTracker;
-    use value;
     let ds = &mut cardshoetracker::CardShoeTracker::new(dsInput);
     // TODO: Track suit as well
     let mut num_4 = 0i;

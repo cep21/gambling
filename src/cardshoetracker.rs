@@ -1,16 +1,18 @@
 use shoe;
-use cards;
-use value;
-use value::Value;
-use cards::Card;
+use cards::value::Value;
+use cards::value;
+use cards::value::ValueImpl;
+use cards::card::Card;
+use cards::card::CardImpl;
+use shoe::shoe::DirectShoe;
 
 pub struct CardShoeTracker<'a> {
     counts: [[uint, ..4], ..13],
-    wrapping: &'a mut shoe::DirectShoe + 'a,
+    wrapping: &'a mut DirectShoe + 'a,
 }
 
-impl <'a>shoe::DirectShoe for CardShoeTracker<'a> {
-    fn pop(&mut self) -> Option<cards::CardImpl> {
+impl <'a>shoe::shoe::DirectShoe for CardShoeTracker<'a> {
+    fn pop(&mut self) -> Option<CardImpl> {
         let r = self.wrapping.pop();
         match r {
             Some(r) => self.counts[r.value().index()][r.suit().index()] += 1,
@@ -21,19 +23,19 @@ impl <'a>shoe::DirectShoe for CardShoeTracker<'a> {
     fn len(&self) -> uint {
         return self.wrapping.len();
     }
-    fn count(&self, v: &value::Value) -> uint {
+    fn count(&self, v: &Value) -> uint {
         return self.wrapping.count(v);
     }
 }
 
 impl <'a>CardShoeTracker<'a> {
-    pub fn new(wrap: &'a mut shoe::DirectShoe) -> CardShoeTracker<'a> {
+    pub fn new(wrap: &'a mut DirectShoe) -> CardShoeTracker<'a> {
         return CardShoeTracker{
             counts: [[0, 0, 0, 0], ..13],
             wrapping: wrap,
         };
     }
-    pub fn countValue(&self, ref v: value::ValueImpl) -> uint {
+    pub fn countValue(&self, ref v: ValueImpl) -> uint {
         let mut ret = 0;
         for &i in self.counts[v.index()].iter() {
             ret += i;

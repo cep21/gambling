@@ -1,16 +1,17 @@
-use shoe;
 use cards;
-use cards::CardImpl;
-use cards::Card;
-use value;
-use shoe::DirectShoe;
+use cards::card::CardImpl;
+use cards::card::Card;
+use cards::value;
+use cards::card;
+use shoe::shoe;
+use shoe::shoe::DirectShoe;
 
 pub struct DirectActualShoe<'a> {
-    cards: &'a mut Vec<cards::CardImpl>,
+    cards: &'a mut Vec<card::CardImpl>,
 }
 
 impl <'a>shoe::DirectShoe for DirectActualShoe<'a> {
-    fn pop(&mut self) -> Option<cards::CardImpl> {
+    fn pop(&mut self) -> Option<card::CardImpl> {
         return self.cards.pop();
     }
     fn len(&self) -> uint {
@@ -28,7 +29,7 @@ impl <'a>shoe::DirectShoe for DirectActualShoe<'a> {
 }
 
 impl <'a> DirectActualShoe<'a> {
-    fn new(v: &'a mut Vec<cards::CardImpl>) -> DirectActualShoe<'a> {
+    fn new(v: &'a mut Vec<card::CardImpl>) -> DirectActualShoe<'a> {
         return DirectActualShoe{
             cards: v,
         }
@@ -37,7 +38,6 @@ impl <'a> DirectActualShoe<'a> {
 
 #[test]
 fn test_direct() {
-    use deck;
     let v = &mut Vec::new();
     let ds = DirectActualShoe::new(v);
     assert_eq!(0, ds.len());

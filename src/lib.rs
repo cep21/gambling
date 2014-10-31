@@ -1,11 +1,16 @@
-pub mod suit;
-pub mod color;
-pub mod value;
-pub mod cards;
-pub mod deck;
-pub mod shoe;
-mod directshoe;
-mod randomshoe;
-mod cardshoetracker;
+pub mod cards {
+    pub mod suit;
+    pub mod color;
+    pub mod value;
+    pub mod card;
+}
+pub mod shoe {
+    pub mod deck;
+    pub mod shoe;
+    pub mod directshoe;
+}
 mod hand;
-mod dealer;
+pub mod cardshoetracker;
+/*pub mod shoe;
+mod randomshoe;
+mod dealer;*/
