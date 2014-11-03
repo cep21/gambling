@@ -16,12 +16,14 @@ pub trait BJHand<'a> {
     fn len(&self) -> uint;
     fn cards(&'a self) -> &'a Vec<CardImpl>;
     fn addCard(&mut self, CardImpl);
+    fn splitNumber(&self) -> uint;
 }
 
 pub struct BJHandImpl<'a> {
     score: uint,
     cards: Vec<CardImpl>,
     hasAce: bool,
+    splitNumber: uint,
 }
 
 impl <'a>BJHand<'a> for BJHandImpl<'a> {
@@ -45,6 +47,9 @@ impl <'a>BJHand<'a> for BJHandImpl<'a> {
     fn cards(&'a self) -> &'a Vec<CardImpl> {
         return &self.cards;
     }
+    fn splitNumber(&self) -> uint {
+        return self.splitNumber;
+    }
     fn addCard(&mut self, card: CardImpl) {
         self.cards.push(card);
         self.score += scoreForValue(card.value());
@@ -60,6 +65,7 @@ impl <'a>BJHandImpl<'a> {
             score: 0,
             cards: Vec::with_capacity(22),
             hasAce: false,
+            splitNumber: 0,
         }
     }
 }

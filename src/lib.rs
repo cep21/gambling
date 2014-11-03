@@ -13,3 +13,6 @@ pub mod shoe {
 mod hand;
 pub mod cardshoetracker;
 mod dealer;
+pub mod action_calculator;
+pub mod rules;
+pub mod bjaction;
