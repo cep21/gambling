@@ -1,6 +1,7 @@
 use cards::card::CardImpl;
 use cards::card::Card;
 use cards::value;
+use cards::value::Value;
 use cards::card;
 use shoe::shoe;
 use shoe::deck::cards_in_deck;
@@ -25,6 +26,11 @@ impl <'a>shoe::DirectShoe for DirectActualShoe<'a> {
             }
         }
         return r;
+    }
+    fn remove(&mut self, v: &Value) -> Option<CardImpl> {
+        return None;
+    }
+    fn insert(&mut self, v: &Card) {
     }
 }
 

@@ -33,6 +33,24 @@ impl ActionCalculator for ActionCalculatorImpl {
             SURRENDER => Some(0.5),
         }
     }
+    fn expectedWithDealer(&self, playerHand: &BJHand, dealerHand: &BJHand, d: &DirectShoe,
+                          rules: &BJRules) -> Option<f64> {
+        if !rules.shouldHitDealerHand(dealerHand) {
+            let dealerScore = dealerHand.score();
+            let playerScore = playerHand.score();
+            if dealerScore > playerScore {
+                return Some(0.0);
+            } else if dealerScore < playerScore {
+                return Some(2.0);
+            } else {
+                return Some(1.0);
+            }
+        } else {
+            // The dealer hits ... takes a random card
+            
+            return None;
+        }
+    }
 }
 
 #[test]

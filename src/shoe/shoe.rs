@@ -1,11 +1,14 @@
 use cards::value::Value;
 use cards::value;
 use cards::card::CardImpl;
+use cards::card::Card;
 
 pub trait DirectShoe {
     fn pop(&mut self) -> Option<CardImpl>;
     fn len(&self) -> uint;
     fn count(&self, v: &Value) -> uint;
+    fn remove(&mut self, v: &Value) -> Option<CardImpl>;
+    fn insert(&mut self, v: &Card);
 }
 
 // TODO: define only for test?

@@ -5,6 +5,7 @@ use cards::value::ValueImpl;
 use cards::card::CardImpl;
 use cards::suit::SuitImpl;
 use cards::suit::SUITS;
+use cards::card::Card;
 use std::rand;
 
 pub trait SuitPicker {
@@ -149,6 +150,11 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
     }
     fn count(&self, v: &Value) -> uint {
         return self.valuePicker.count(v);
+    }
+    fn remove(&mut self, v: &Value) -> Option<CardImpl> {
+        return None;
+    }
+    fn insert(&mut self, v: &Card) {
     }
 }
 

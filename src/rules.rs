@@ -1,12 +1,12 @@
 use hand::BJHand;
 
 pub trait BJRules {
-    fn canDouble(h: BJHand) -> bool;
-    fn canSplit(h: BJHand) -> bool;
-    fn canSurrender(h: BJHand) -> bool;
-    fn shouldHitDealerHand(h: BJHand) -> bool;
-    fn blackjackPayout() -> f64;
-    fn canHit(h: BJHand) -> bool;
+    fn canDouble(&self, h: BJHand) -> bool;
+    fn canSplit(&self, h: BJHand) -> bool;
+    fn canSurrender(&self, h: BJHand) -> bool;
+    fn shouldHitDealerHand(&self, h: &BJHand) -> bool;
+    fn blackjackPayout(&self) -> f64;
+    fn canHit(&self, h: BJHand) -> bool;
 }
 
 pub struct BJRulesImpl {
