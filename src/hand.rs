@@ -5,7 +5,7 @@ use cards::value::Value;
 use cards::card::CardImpl;
 use cards::card::Card;
 
-pub const INDEX_TO_SCORE: [uint, ..13] = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
+pub const INDEX_TO_SCORE: [uint, ..13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 pub fn scoreForValue(v: &Value) -> uint {
     return INDEX_TO_SCORE[v.index()];
 }
@@ -14,47 +14,51 @@ pub trait BJHand<'a> {
     fn score(&self) -> uint;
     fn isSoft(&self) -> bool;
     fn len(&self) -> uint;
-    fn cards(&'a self) -> &'a Vec<CardImpl>;
     fn addCard(&mut self, CardImpl);
+    fn removeCard(&mut self, CardImpl);
     fn splitNumber(&self) -> uint;
 }
 
 pub struct BJHandImpl<'a> {
     score: uint,
-    cards: Vec<CardImpl>,
-    hasAce: bool,
+    aceCount: uint,
     splitNumber: uint,
+    numCards: uint,
 }
 
 impl <'a>BJHand<'a> for BJHandImpl<'a> {
     fn score(&self) -> uint {
-        if self.hasAce {
-            if self.score > 21 {
-                return self.score - 10;
-            } else {
-                return self.score;
-            }
+        if self.isSoft() {
+            return self.score + 10;
         } else {
             return self.score;
         }
     }
     fn isSoft(&self) -> bool {
-        return self.hasAce && self.score < 22;
+        return self.aceCount > 0 && self.score + 10 <= 21;
     }
     fn len(&self) -> uint {
-        return self.cards.len();
-    }
-    fn cards(&'a self) -> &'a Vec<CardImpl> {
-        return &self.cards;
+        return self.numCards;
     }
     fn splitNumber(&self) -> uint {
         return self.splitNumber;
     }
     fn addCard(&mut self, card: CardImpl) {
-        self.cards.push(card);
         self.score += scoreForValue(card.value());
+        self.numCards += 1;
         if card.value().index() == value::ACE.index() {
-            self.hasAce = true;
+            self.aceCount += 1;
+        }
+    }
+
+    fn removeCard(&mut self, card: CardImpl) {
+        assert!(self.score >= scoreForValue(card.value()));
+        assert!(self.numCards >= 1);
+        self.score -= scoreForValue(card.value());
+        self.numCards -= 1;
+        if card.value().index() == value::ACE.index() {
+            assert!(self.aceCount >= 1);
+            self.aceCount -= 1;
         }
     }
 }
@@ -63,9 +67,9 @@ impl <'a>BJHandImpl<'a> {
     pub fn new() -> BJHandImpl<'a> {
         return BJHandImpl{
             score: 0,
-            cards: Vec::with_capacity(22),
-            hasAce: false,
+            aceCount: 0,
             splitNumber: 0,
+            numCards: 0,
         }
     }
 }
@@ -88,10 +92,10 @@ fn test_hand() {
     assert_eq!(3, h.len());
     assert_eq!(13, h.score());
     assert_eq!(false, h.isSoft());
-    assert_eq!(3, h.cards.len());
+    assert_eq!(3, h.len());
     h.addCard(CardImpl::new(value::KING, suit::SPADE));
     assert_eq!(4, h.len());
     assert_eq!(23, h.score());
     assert_eq!(false, h.isSoft());
-    assert_eq!(4, h.cards.len());
+    assert_eq!(4, h.len());
 }
