@@ -4,6 +4,10 @@ use cards::value::VALUES;
 use cards::value::ValueImpl;
 use cards::card::CardImpl;
 use cards::suit::SuitImpl;
+use cards::suit::SPADE;
+use cards::suit::CLUB;
+use cards::suit::HEART;
+use cards::suit::DIAMOND;
 use cards::suit::SUITS;
 use cards::card::Card;
 use std::rand;
@@ -30,6 +34,18 @@ struct SuitCount {
 
 struct RandomDeckSuitPicker {
     suitCounts: Vec<SuitCount>,
+}
+
+impl RandomDeckSuitPicker {
+    fn new(numDecks: uint) -> RandomDeckSuitPicker {
+        let mut v = Vec::new();
+        for &s in SUITS.iter() {
+            v.push(SuitCount{suit: s, counts: numDecks});
+        }
+        return RandomDeckSuitPicker{
+            suitCounts: v,
+        };
+    }
 }
 
 impl SuitPicker for RandomDeckSuitPicker {
@@ -81,7 +97,23 @@ struct ValueCount {
 
 struct RandomDeckValuePicker {
     valueCounts: Vec<ValueCount>,
-    indexedValueCounts: [ValueCount, ..13],
+    indexedValueCounts: Vec<ValueCount>,
+}
+
+impl RandomDeckValuePicker {
+    fn new(numDecks: uint) -> RandomDeckValuePicker {
+        let mut valueCounts = Vec::new();
+        let mut indexedValueCounts = Vec::new();
+        for &v in VALUES.iter() {
+            let vc = ValueCount{value: v, counts: numDecks * 4};
+            valueCounts.push(vc);
+            indexedValueCounts.push(vc);
+        }
+        return RandomDeckValuePicker{
+            valueCounts: valueCounts,
+            indexedValueCounts: indexedValueCounts,
+        };
+    }
 }
 
 impl ValuePicker for RandomDeckValuePicker {

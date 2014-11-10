@@ -8,11 +8,11 @@ pub mod shoe {
     pub mod deck;
     pub mod shoe;
     pub mod directshoe;
-    mod randomshoe;
+    pub mod randomshoe;
 }
-mod hand;
+pub mod hand;
 pub mod cardshoetracker;
-mod dealer;
+pub mod dealer;
 pub mod bjaction;
 pub mod action_calculator;
 pub mod rules;

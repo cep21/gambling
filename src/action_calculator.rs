@@ -7,7 +7,10 @@ use bjaction::DOUBLE;
 use bjaction::SURRENDER;
 use bjaction::SPLIT;
 use cards::card::Card;
+use cards::card::CardImpl;
 use cards::value::VALUES;
+use cards::value;
+use cards::suit;
 use cards::value::Value;
 use rules::BJRules;
 use shoe::shoe::DirectShoe;
@@ -78,4 +81,10 @@ impl ActionCalculator for ActionCalculatorImpl {
 
 #[test]
 fn test_expected_21() {
+    let a = ActionCalculatorImpl;
+    let mut playerHand = BJHandImpl::new();
+//    let mut shoe = GenericDirectShoe::new(vp, sps, 52);
+    playerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
+    playerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
+
 }
