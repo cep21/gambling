@@ -38,7 +38,7 @@ pub struct RandomDeckSuitPicker {
 
 
 impl RandomDeckSuitPicker {
-    fn new(numDecks: uint) -> RandomDeckSuitPicker {
+    pub fn new(numDecks: uint) -> RandomDeckSuitPicker {
         let mut v = Vec::new();
         for &s in SUITS.iter() {
             v.push(SuitCount{suit: s, counts: numDecks});
@@ -102,7 +102,7 @@ pub struct RandomDeckValuePicker {
 }
 
 impl RandomDeckValuePicker {
-    fn new(numDecks: uint) -> RandomDeckValuePicker {
+    pub fn new(numDecks: uint) -> RandomDeckValuePicker {
         let mut valueCounts = Vec::new();
         let mut indexedValueCounts = Vec::new();
         for &v in VALUES.iter() {
@@ -144,14 +144,15 @@ impl ValuePicker for RandomDeckValuePicker {
     }
 }
 
-pub struct GenericDirectShoe<'a, 'b:'a> {
-    valuePicker: &'a mut ValuePicker + 'a,
-    suitPickers: &'a mut [&'b mut SuitPicker + 'b],
+pub struct GenericDirectShoe<'a> {
+    valuePicker: Box<ValuePicker + 'a>,
+    suitPickers: Box<[Box<SuitPicker + 'a>]>,
     len: uint,
 }
 
-impl <'a, 'b: 'a>GenericDirectShoe<'a, 'b> {
-    fn new(valuePicker: &'a mut ValuePicker, suitPickers: &'b mut [&'a mut SuitPicker], len: uint) -> GenericDirectShoe<'a, 'b> {
+impl <'a>GenericDirectShoe<'a> {
+    pub fn new(valuePicker: Box<ValuePicker>, suitPickers: Box<[Box<SuitPicker>]>, len: uint)
+            -> GenericDirectShoe<'a> {
         return GenericDirectShoe {
             valuePicker: valuePicker,
             suitPickers: suitPickers,
@@ -160,7 +161,7 @@ impl <'a, 'b: 'a>GenericDirectShoe<'a, 'b> {
     }
 }
 
-impl <'a, 'b>DirectShoe for GenericDirectShoe<'a, 'b> {
+impl <'a>DirectShoe for GenericDirectShoe<'a> {
     fn pop(&mut self) -> Option<CardImpl> {
         return match self.valuePicker.value() {
             Some(v) => {
@@ -185,8 +186,14 @@ impl <'a, 'b>DirectShoe for GenericDirectShoe<'a, 'b> {
         return self.valuePicker.count(v);
     }
     fn remove(&mut self, v: &Value) -> Option<CardImpl> {
-        unimplemented!()
-        return None;
+        let ref mut picker = self.suitPickers[v.index()];
+        match picker.suit() {
+            Some(s) => {
+                self.len -= 1;
+                Some(CardImpl::new(v, s))
+            },
+            None => None
+        }
     }
     fn insert(&mut self, v: &Card) {
         unimplemented!()

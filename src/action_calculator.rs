@@ -13,8 +13,10 @@ use cards::value;
 use cards::suit;
 use cards::value::Value;
 use rules::BJRules;
+use rules::BJRulesImpl;
 use shoe::shoe::DirectShoe;
 use shoe::randomshoe::RandomDeckSuitPicker;
+use shoe::randomshoe::SuitPicker;
 use shoe::randomshoe::RandomDeckValuePicker;
 use shoe::randomshoe::GenericDirectShoe;
 
@@ -85,6 +87,7 @@ impl ActionCalculator for ActionCalculatorImpl {
 #[test]
 fn test_expected_21() {
     let a = ActionCalculatorImpl;
+    let rules = BJRulesImpl;
     let mut playerHand = BJHandImpl::new();
     playerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
     playerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
@@ -93,9 +96,12 @@ fn test_expected_21() {
     dealerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
 
     let mut vp = RandomDeckValuePicker::new(1);
-    let mut sp = Vec::new();
+    let mut sp : Vec<Box<SuitPicker>> = Vec::new();
     for i in range (0, 13u) {
-        sp.push(RandomDeckSuitPicker::new(1));
+        sp.push(box RandomDeckSuitPicker::new(1));
     }
-    let mut shoe = GenericDirectShoe::new(&mut vp, *(sp.as_mut_slice()), 52);
+    let mut shoe = GenericDirectShoe::new(box vp, sp.into_boxed_slice(), 52);
+    let result = a.expectedWithDealer(
+        &playerHand, &mut dealerHand, &mut shoe, &rules);
+    println!("{}\n",result);
 }
