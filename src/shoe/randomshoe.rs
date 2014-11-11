@@ -32,9 +32,10 @@ struct SuitCount {
     counts: uint,
 }
 
-struct RandomDeckSuitPicker {
+pub struct RandomDeckSuitPicker {
     suitCounts: Vec<SuitCount>,
 }
+
 
 impl RandomDeckSuitPicker {
     fn new(numDecks: uint) -> RandomDeckSuitPicker {
@@ -95,7 +96,7 @@ struct ValueCount {
     counts: uint,
 }
 
-struct RandomDeckValuePicker {
+pub struct RandomDeckValuePicker {
     valueCounts: Vec<ValueCount>,
     indexedValueCounts: Vec<ValueCount>,
 }
@@ -143,14 +144,14 @@ impl ValuePicker for RandomDeckValuePicker {
     }
 }
 
-pub struct GenericDirectShoe<'a> {
+pub struct GenericDirectShoe<'a, 'b:'a> {
     valuePicker: &'a mut ValuePicker + 'a,
-    suitPickers: [&'a mut SuitPicker + 'a, ..13],
+    suitPickers: &'a mut [&'b mut SuitPicker + 'b],
     len: uint,
 }
 
-impl <'a>GenericDirectShoe<'a> {
-    fn new(valuePicker: &'a mut ValuePicker, suitPickers: [&'a mut SuitPicker, ..13], len: uint) -> GenericDirectShoe<'a> {
+impl <'a, 'b: 'a>GenericDirectShoe<'a, 'b> {
+    fn new(valuePicker: &'a mut ValuePicker, suitPickers: &'b mut [&'a mut SuitPicker], len: uint) -> GenericDirectShoe<'a, 'b> {
         return GenericDirectShoe {
             valuePicker: valuePicker,
             suitPickers: suitPickers,
@@ -159,7 +160,7 @@ impl <'a>GenericDirectShoe<'a> {
     }
 }
 
-impl <'a>DirectShoe for GenericDirectShoe<'a> {
+impl <'a, 'b>DirectShoe for GenericDirectShoe<'a, 'b> {
     fn pop(&mut self) -> Option<CardImpl> {
         return match self.valuePicker.value() {
             Some(v) => {
@@ -184,9 +185,11 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
         return self.valuePicker.count(v);
     }
     fn remove(&mut self, v: &Value) -> Option<CardImpl> {
+        unimplemented!()
         return None;
     }
     fn insert(&mut self, v: &Card) {
+        unimplemented!()
     }
 }
 

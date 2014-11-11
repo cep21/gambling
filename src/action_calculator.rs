@@ -14,6 +14,9 @@ use cards::suit;
 use cards::value::Value;
 use rules::BJRules;
 use shoe::shoe::DirectShoe;
+use shoe::randomshoe::RandomDeckSuitPicker;
+use shoe::randomshoe::RandomDeckValuePicker;
+use shoe::randomshoe::GenericDirectShoe;
 
 pub trait ActionCalculator {
     fn expectedValue(&self, h: &mut BJHand, dealerUpCard: &Card, d: &mut DirectShoe, action: BJAction, rules: &BJRules) ->
@@ -83,8 +86,16 @@ impl ActionCalculator for ActionCalculatorImpl {
 fn test_expected_21() {
     let a = ActionCalculatorImpl;
     let mut playerHand = BJHandImpl::new();
-//    let mut shoe = GenericDirectShoe::new(vp, sps, 52);
     playerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
     playerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
 
+    let mut dealerHand = BJHandImpl::new();
+    dealerHand.addCard(CardImpl::new(value::TEN, suit::SPADE));
+
+    let mut vp = RandomDeckValuePicker::new(1);
+    let mut sp = Vec::new();
+    for i in range (0, 13u) {
+        sp.push(RandomDeckSuitPicker::new(1));
+    }
+    let mut shoe = GenericDirectShoe::new(&mut vp, *(sp.as_mut_slice()), 52);
 }
