@@ -26,7 +26,7 @@ impl <'a>shoe::shoe::DirectShoe for CardShoeTracker<'a> {
     fn count(&self, v: &Value) -> uint {
         return self.wrapping.count(v);
     }
-    fn remove(&mut self, v: &Value) -> Option<CardImpl> {
+    fn remove(&mut self, v: &ValueImpl) -> Option<CardImpl> {
         return self.wrapping.remove(v);
     }
     fn insert(&mut self, v: &Card) {

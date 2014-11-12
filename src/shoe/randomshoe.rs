@@ -76,6 +76,7 @@ impl SuitPicker for RandomDeckSuitPicker {
 pub trait ValuePicker {
     fn value(&mut self) -> Option<ValueImpl>;
     fn count(&self, v: &Value) -> uint;
+    fn remove(&mut self, v: &Value);
 }
 
 struct RandomValuePicker;
@@ -89,6 +90,9 @@ impl ValuePicker for RandomValuePicker {
         // Assumes full single deck
         return 4;
     }
+    fn remove(&mut self, v: &Value) {
+        // infinite deck.  Nothing done
+    }
 }
 
 struct ValueCount {
@@ -96,28 +100,30 @@ struct ValueCount {
     counts: uint,
 }
 
-pub struct RandomDeckValuePicker {
-    valueCounts: Vec<ValueCount>,
+pub struct RandomDeckValuePicker<'a> {
+    nonZeroIndexCounts: Vec<uint>,
     indexedValueCounts: Vec<ValueCount>,
+    size: uint,
 }
 
-impl RandomDeckValuePicker {
-    pub fn new(numDecks: uint) -> RandomDeckValuePicker {
-        let mut valueCounts = Vec::new();
+impl <'a>RandomDeckValuePicker<'a> {
+    pub fn new(numDecks: uint) -> RandomDeckValuePicker<'a> {
+        let mut nonZeroIndexCounts = Vec::new();
         let mut indexedValueCounts = Vec::new();
         for &v in VALUES.iter() {
-            let vc = ValueCount{value: v, counts: numDecks * 4};
-            valueCounts.push(vc);
+            let vc = box ValueCount{value: v, counts: numDecks * 4};
+            nonZeroIndexCounts.push(indexedValueCounts.len());
             indexedValueCounts.push(vc);
         }
         return RandomDeckValuePicker{
             valueCounts: valueCounts,
             indexedValueCounts: indexedValueCounts,
+            size: numDecks * VALUES.len(),
         };
     }
 }
 
-impl ValuePicker for RandomDeckValuePicker {
+impl <'a>ValuePicker for RandomDeckValuePicker<'a> {
     fn value(&mut self) -> Option<ValueImpl> {
         if self.valueCounts.len() == 0 {
             return None;
@@ -126,21 +132,40 @@ impl ValuePicker for RandomDeckValuePicker {
             let valueIndex = rand::random::<uint>() % self.valueCounts.len();
             let ref mut valueToLook = self.valueCounts.get_mut(valueIndex);
             let valueToRet = valueToLook.value;
-            valueToLook.counts -= 1;
+            println!("count is {} for {}", valueToLook.counts, valueToLook.value.desc());
             if valueToLook.counts == 0 {
-                (valueToRet, Some(valueIndex))
+                (None, Some(valueIndex))
             } else {
-                (valueToRet, None)
+                valueToLook.counts -= 1;
+                if valueToLook.counts == 0 {
+                    (Some(valueToRet), Some(valueIndex))
+                } else {
+                    (Some(valueToRet), None)
+                }
             }
         };
         match remove_index {
             Some(i) => {self.valueCounts.remove(i);()},
             None => (),
         }
-        return Some(valueToRet);
+        match valueToRet {
+            Some(val) => {
+                return Some(val);
+            },
+            None => self.value()
+        }
     }
     fn count(&self, v: &Value) -> uint {
         return self.indexedValueCounts[v.index()].counts;
+    }
+    fn remove(&mut self, val: &Value) {
+        let ref mut v = self.indexedValueCounts.get_mut(val.index());
+        println!("Counts is {}", v.counts);
+        if v.counts == 0 {
+//            fail!("Counts is zero!");
+        } else {
+            v.counts -= 1;
+        }
     }
 }
 
@@ -171,7 +196,9 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
                         self.len -= 1;
                         Some(CardImpl::new(v, s))
                     },
-                    None => None
+                    None =>  {
+                        fail!("Suit should never be empty for a value {}!", v.desc())
+                    }
                 }
             },
             None => {
@@ -185,14 +212,18 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
     fn count(&self, v: &Value) -> uint {
         return self.valuePicker.count(v);
     }
-    fn remove(&mut self, v: &Value) -> Option<CardImpl> {
+    fn remove(&mut self, v: &ValueImpl) -> Option<CardImpl> {
+        self.valuePicker.remove(v);
         let ref mut picker = self.suitPickers[v.index()];
         match picker.suit() {
             Some(s) => {
                 self.len -= 1;
-                Some(CardImpl::new(v, s))
+                println!("Removed something!");
+                Some(CardImpl::new(*v, s))
             },
-            None => None
+            None => {
+                return None;
+            }
         }
     }
     fn insert(&mut self, v: &Card) {
@@ -202,6 +233,13 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
 
 #[test]
 fn test_random() {
-//    let mut randDeck = DirectRandomShoe::new(1);
-//    shoe::test_single_deck(&mut randDeck); 
+    use shoe::shoe::test_single_deck;
+    let mut vp = RandomDeckValuePicker::new(1);
+    let mut sp : Vec<Box<SuitPicker>> = Vec::new();
+    for i in range (0, 13u) {
+        sp.push(box RandomDeckSuitPicker::new(1));
+    }
+    let mut shoe = GenericDirectShoe::new(box vp, sp.into_boxed_slice(), 52);
+    println!("starting");
+    test_single_deck(&mut shoe);
 }
