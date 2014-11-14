@@ -4,12 +4,14 @@ use cards::value::VALUES;
 use cards::value::ValueImpl;
 use cards::card::CardImpl;
 use cards::suit::SuitImpl;
+use cards::suit::Suit;
 use cards::suit::SUITS;
 use cards::card::Card;
 use std::rand;
 
 pub trait SuitPicker {
     fn suit(&mut self) -> Option<SuitImpl>;
+    fn insert(&mut self, &Suit);
 }
 
 struct CycleSuitPicker {
@@ -20,6 +22,9 @@ impl SuitPicker for CycleSuitPicker {
     fn suit(&mut self) -> Option<SuitImpl> {
         self.suit_index += 1;
         return Some(SUITS[self.suit_index % 4]);
+    }
+    fn insert(&mut self, s: &Suit) {
+        unimplemented!()
     }
 }
 
@@ -66,6 +71,8 @@ impl SuitPicker for RandomDeckSuitPicker {
             None => (),
         };
         return Some(suitToRet);
+    }
+    fn insert(&mut self, s: &Suit) {
     }
 }
 
@@ -196,6 +203,11 @@ impl <'a>ValuePicker for RandomDeckValuePicker<'a> {
         }
     }
     fn insert(&mut self, val: &Value) {
+        if self.indexedValueCounts[val.index()].counts == 0 {
+            self.nonZeroIndexCounts.push(val.index());
+        }
+        self.indexedValueCounts[val.index()].counts += 1;
+        self.size += 1;
     }
 }
 
@@ -257,7 +269,9 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
         }
     }
     fn insert(&mut self, v: &Card) {
-        unimplemented!()
+        self.valuePicker.insert(v.value());
+        self.suitPickers[v.value().index()].insert(v.suit());
+        self.len += 1;
     }
 }
 
