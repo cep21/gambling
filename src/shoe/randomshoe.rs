@@ -9,7 +9,7 @@ use std::rand;
 pub trait SuitPicker<'a> {
     fn suit(&mut self) -> Option<&'a Suit>;
     fn insert(&mut self, &'a Suit);
-    fn remove(&mut self, &'a Suit) -> bool;
+    fn remove(&mut self, &'a Suit) -> Option<&'a Suit>;
     fn count(&self, s: &'a Suit) -> uint;
     fn len(&self) -> uint;
 }
@@ -17,7 +17,7 @@ pub trait SuitPicker<'a> {
 pub trait ValuePicker<'a> {
     fn value(&mut self) -> Option<&'a Value>;
     fn count(&self, v: &Value) -> uint;
-    fn remove(&mut self, v: &Value) -> bool;
+    fn remove(&mut self, v: &Value) -> Option<&'a Value>;
     fn insert(&mut self, v: &Value);
     fn len(&self) -> uint;
 }
@@ -45,8 +45,8 @@ impl <'a>SuitPicker<'a> for CycleSuitPicker {
     fn count(&self, v: &Suit) -> uint {
         return 1;
     }
-    fn remove(&mut self, val: &Suit) -> bool {
-        unimplemented!()
+    fn remove(&mut self, val: &Suit) -> Option<&'a Suit>{
+        return Some(&SUITS[val.index()])
     }
     fn len(&self) -> uint {
         return 4;
@@ -64,8 +64,8 @@ impl <'a>ValuePicker<'a> for RandomValuePicker {
         // Assumes full single deck
         return 4;
     }
-    fn remove(&mut self, v: &Value) -> bool {
-        return true;
+    fn remove(&mut self, v: &Value) -> Option<&'a Value> {
+        return Some(&VALUES[v.index()]);
     }
     fn insert(&mut self, v: &Value) {
         // infinite deck.  Nothing done
@@ -210,8 +210,11 @@ impl <'a>ValuePicker<'a> for RandomDeckValuePicker {
     fn count(&self, v: &Value) -> uint {
         self.item_picker.count(v.index())
     }
-    fn remove(&mut self, val: &Value) -> bool {
-        self.item_picker.remove(val.index())
+    fn remove(&mut self, val: &Value) -> Option<&'a Value> {
+        match self.item_picker.remove(val.index()) {
+            true => Some(&VALUES[val.index()]),
+            false => None,
+        }
     }
     fn insert(&mut self, val: &Value) {
         self.item_picker.insert(val.index())
@@ -244,8 +247,11 @@ impl <'a>SuitPicker<'a> for RandomDeckSuitPicker {
     fn count(&self, v: &Suit) -> uint {
         self.item_picker.count(v.index())
     }
-    fn remove(&mut self, val: &Suit) -> bool {
-        self.item_picker.remove(val.index())
+    fn remove(&mut self, val: &Suit) -> Option<&'a Suit> {
+        match self.item_picker.remove(val.index()) {
+            true => Some(&SUITS[val.index()]),
+            false => None,
+        }
     }
     fn insert(&mut self, val: &Suit) {
         self.item_picker.insert(val.index())
@@ -298,11 +304,10 @@ impl <'a>DirectShoe<'a> for GenericDirectShoe<'a> {
     }
     fn remove(&mut self, v: &Value) -> Option<Card<'a>> {
         return match self.valuePicker.remove(v) {
-            false => None,
-            true => match self.suitPickers[v.index()].suit() {
+            None => None,
+            Some(val) => match self.suitPickers[v.index()].suit() {
                 Some(s) => {
-
-                    Some(Card::new(v, s))
+                    Some(Card::new(val, s))
                 },
                 None => {
                     fail!("Suit should never be empty for a value {}!", v.desc())
@@ -310,7 +315,7 @@ impl <'a>DirectShoe<'a> for GenericDirectShoe<'a> {
             }
         }
     }
-    fn insert(&mut self, v: &Card) {
+    fn insert(&mut self, v: &'a Card) {
         self.valuePicker.insert(v.value());
         self.suitPickers[v.value().index()].insert(v.suit());
     }

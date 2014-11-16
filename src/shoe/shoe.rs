@@ -7,7 +7,7 @@ pub trait DirectShoe<'a> {
     fn len(&self) -> uint;
     fn count(&self, v: &Value) -> uint;
     fn remove(&mut self, v: &Value) -> Option<Card<'a>>;
-    fn insert(&mut self, v: &Card);
+    fn insert(&mut self, v: &'a Card);
 }
 
 // TODO: define only for test?
