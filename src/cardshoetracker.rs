@@ -27,7 +27,7 @@ impl <'a>shoe::shoe::DirectShoe<'a> for CardShoeTracker<'a> {
     fn remove(&mut self, v: &Value) -> Option<Card<'a>> {
         return self.wrapping.remove(v);
     }
-    fn insert(&mut self, v: &Card) {
+    fn insert(&mut self, v: &'a Card) {
         self.wrapping.insert(v);
     }
 }
