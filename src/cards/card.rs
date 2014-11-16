@@ -8,10 +8,10 @@ pub struct Card<'a> {
 }
 
 impl <'a>Card<'a> {
-    fn suit(&self) -> &'a Suit {
+    pub fn suit(&self) -> &'a Suit {
         return self.s;
     }
-    fn value(&self) -> &'a Value {
+    pub fn value(&self) -> &'a Value {
         return self.v;
     }
     pub fn new(v: &'a Value, s: &'a Suit) -> Card<'a> {

@@ -7,13 +7,13 @@ pub struct Suit {
 }
 
 impl Suit {
-    fn desc(&self) -> &str {
+    pub fn desc(&self) -> &str {
         return self.desc;
     }
-    fn color(&self) -> &color::Color {
+    pub fn color(&self) -> &color::Color {
         return self.c;
     }
-    fn index(&self) -> uint {
+    pub fn index(&self) -> uint {
         return self.i;
     }
 }

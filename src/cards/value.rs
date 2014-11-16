@@ -4,10 +4,10 @@ pub struct Value {
 }
 
 impl Value {
-    fn desc(&self) -> &str {
+    pub fn desc(&self) -> &str {
         return self.desc;
     }
-    fn index(&self) -> uint {
+    pub fn index(&self) -> uint {
         return self.i;
     }
 }
