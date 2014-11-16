@@ -1,8 +1,5 @@
-use cards;
 use cards::value;
-use cards::suit;
 use cards::value::Value;
-use cards::card::CardImpl;
 use cards::card::Card;
 
 pub const INDEX_TO_SCORE: [uint, ..13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
@@ -14,8 +11,8 @@ pub trait BJHand<'a> {
     fn score(&self) -> uint;
     fn isSoft(&self) -> bool;
     fn len(&self) -> uint;
-    fn addCard(&mut self, CardImpl);
-    fn removeCard(&mut self, CardImpl);
+    fn addCard(&mut self, Card);
+    fn removeCard(&mut self, Card);
     fn splitNumber(&self) -> uint;
 }
 
@@ -43,7 +40,7 @@ impl <'a>BJHand<'a> for BJHandImpl<'a> {
     fn splitNumber(&self) -> uint {
         return self.splitNumber;
     }
-    fn addCard(&mut self, card: CardImpl) {
+    fn addCard(&mut self, card: Card) {
         self.score += scoreForValue(card.value());
         self.numCards += 1;
         if card.value().index() == value::ACE.index() {
@@ -51,7 +48,7 @@ impl <'a>BJHand<'a> for BJHandImpl<'a> {
         }
     }
 
-    fn removeCard(&mut self, card: CardImpl) {
+    fn removeCard(&mut self, card: Card) {
         assert!(self.score >= scoreForValue(card.value()));
         assert!(self.numCards >= 1);
         self.score -= scoreForValue(card.value());
@@ -76,24 +73,25 @@ impl <'a>BJHandImpl<'a> {
 
 #[test]
 fn test_hand() {
+    use cards::suit;
     let mut h = BJHandImpl::new();
     assert_eq!(0, h.score());
     assert_eq!(0, h.len());
     assert_eq!(false, h.isSoft());
-    h.addCard(CardImpl::new(value::TEN, suit::SPADE));
+    h.addCard(Card::new(value::TEN, suit::SPADE));
     assert_eq!(1, h.len());
     assert_eq!(10, h.score());
     assert_eq!(false, h.isSoft());
-    h.addCard(CardImpl::new(value::ACE, suit::SPADE));
+    h.addCard(Card::new(value::ACE, suit::SPADE));
     assert_eq!(2, h.len());
     assert_eq!(21, h.score());
     assert_eq!(true, h.isSoft());
-    h.addCard(CardImpl::new(value::TWO, suit::SPADE));
+    h.addCard(Card::new(value::TWO, suit::SPADE));
     assert_eq!(3, h.len());
     assert_eq!(13, h.score());
     assert_eq!(false, h.isSoft());
     assert_eq!(3, h.len());
-    h.addCard(CardImpl::new(value::KING, suit::SPADE));
+    h.addCard(Card::new(value::KING, suit::SPADE));
     assert_eq!(4, h.len());
     assert_eq!(23, h.score());
     assert_eq!(false, h.isSoft());

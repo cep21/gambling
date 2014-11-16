@@ -1,14 +1,15 @@
-use cards::card::CardImpl;
 use cards::suit;
+use cards::card::Card;
 use cards::value;
 
-pub fn cards_in_deck(numDecks: uint, ret: &mut Vec<CardImpl>) -> &mut Vec<CardImpl> {
+pub fn cards_in_deck<'a>(numDecks: uint) -> Vec<Card<'a>> {
+    let mut ret = Vec::new();
     ret.clear();
     ret.reserve_exact(52 * numDecks);
     for i in range(0, numDecks) {
         for &s in suit::SUITS.iter() {
             for &v in value::VALUES.iter() {
-                ret.push(CardImpl{v: v, s: s});
+                ret.push(Card::new(&v,&s));
             }
         }
     }

@@ -1,18 +1,16 @@
 use shoe;
 use cards::value::Value;
 use cards::value;
-use cards::value::ValueImpl;
 use cards::card::Card;
-use cards::card::CardImpl;
 use shoe::shoe::DirectShoe;
 
 pub struct CardShoeTracker<'a> {
     counts: [[uint, ..4], ..13],
-    wrapping: &'a mut DirectShoe + 'a,
+    wrapping: &'a mut DirectShoe<'a> + 'a,
 }
 
-impl <'a>shoe::shoe::DirectShoe for CardShoeTracker<'a> {
-    fn pop(&mut self) -> Option<CardImpl> {
+impl <'a>shoe::shoe::DirectShoe<'a> for CardShoeTracker<'a> {
+    fn pop(&mut self) -> Option<Card<'a>> {
         let r = self.wrapping.pop();
         match r {
             Some(r) => self.counts[r.value().index()][r.suit().index()] += 1,
@@ -26,7 +24,7 @@ impl <'a>shoe::shoe::DirectShoe for CardShoeTracker<'a> {
     fn count(&self, v: &Value) -> uint {
         return self.wrapping.count(v);
     }
-    fn remove(&mut self, v: &ValueImpl) -> Option<CardImpl> {
+    fn remove(&mut self, v: &Value) -> Option<Card<'a>> {
         return self.wrapping.remove(v);
     }
     fn insert(&mut self, v: &Card) {
@@ -35,13 +33,16 @@ impl <'a>shoe::shoe::DirectShoe for CardShoeTracker<'a> {
 }
 
 impl <'a>CardShoeTracker<'a> {
+    /*
+       TODO: Why does new not work?
     pub fn new(wrap: &'a mut DirectShoe) -> CardShoeTracker<'a> {
-        return CardShoeTracker{
+        return CardShoeTracker {
             counts: [[0, 0, 0, 0], ..13],
             wrapping: wrap,
         };
     }
-    pub fn countValue(&self, ref v: ValueImpl) -> uint {
+    */
+    pub fn countValue(&self, ref v: Value) -> uint {
         let mut ret = 0;
         for &i in self.counts[v.index()].iter() {
             ret += i;

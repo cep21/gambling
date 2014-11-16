@@ -1,14 +1,12 @@
 use cards::value::Value;
-use cards::value::ValueImpl;
 use cards::value;
-use cards::card::CardImpl;
 use cards::card::Card;
 
-pub trait DirectShoe {
-    fn pop(&mut self) -> Option<CardImpl>;
+pub trait DirectShoe<'a> {
+    fn pop(&mut self) -> Option<Card<'a>>;
     fn len(&self) -> uint;
     fn count(&self, v: &Value) -> uint;
-    fn remove(&mut self, v: &ValueImpl) -> Option<CardImpl>;
+    fn remove(&mut self, v: &Value) -> Option<Card<'a>>;
     fn insert(&mut self, v: &Card);
 }
 
@@ -20,11 +18,13 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
     use std::collections::HashSet;
     assert_eq!(52, ds.len());
 
+    println!("Counting aces");
     assert_eq!(4, ds.count(&ACE));
     {
         let mut ace_suit_tracking_set = HashSet::new();
         // Make sure there are 4 aces
-        for _ in range(0, 4u) {
+        for i in range(0, 4u) {
+            println!("Removing one ace");
             match ds.remove(&ACE) {
                 Some(c) => {
                     ace_suit_tracking_set.insert(c.suit().index());
@@ -32,6 +32,7 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
                 },
                 _ => {}
             }
+            assert_eq!(3 - i, ds.count(&ACE));
         }
         assert_eq!(4, ace_suit_tracking_set.len());
         match ds.remove(&ACE) {
@@ -41,6 +42,7 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
     }
     assert_eq!(0, ds.count(&ACE));
 
+    println!("Removing and inserting a four");
     {
         let c = ds.remove(&value::FOUR);
         match c {

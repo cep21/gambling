@@ -1,29 +1,21 @@
-use cards::suit;
-use cards::value;
-
-pub trait Card {
-    fn suit(&self) -> &suit::Suit;
-    fn value(&self) -> &value::Value;
-}
+use cards::suit::Suit;
+use cards::value::Value;
 
 // Can I pass a ref?  Or pointer?
-pub struct CardImpl {
-    pub v: value::ValueImpl,
-    pub s: suit::SuitImpl,
+pub struct Card<'a> {
+    v: &'a Value,
+    s: &'a Suit,
 }
 
-impl Card for CardImpl {
-    fn suit(&self) -> &suit::Suit {
-        return &self.s;
+impl <'a>Card<'a> {
+    fn suit(&self) -> &'a Suit {
+        return self.s;
     }
-    fn value(&self) -> &value::Value {
-        return &self.v;
+    fn value(&self) -> &'a Value {
+        return self.v;
     }
-}
-
-impl CardImpl {
-    pub fn new(v: value::ValueImpl, s: suit::SuitImpl) -> CardImpl {
-        return CardImpl {
+    pub fn new(v: &'a Value, s: &'a Suit) -> Card<'a> {
+        return Card {
             v: v,
             s: s,
         };

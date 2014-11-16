@@ -1,21 +1,17 @@
-pub trait Color {
-    fn desc(&self) -> &str;
-}
-
-pub struct ColorImpl {
+pub struct Color {
     desc: &'static str,
 }
 
-impl Color for ColorImpl {
+impl Color {
     fn desc(&self) -> &str {
         return self.desc
     }
 }
 
-pub const RED: ColorImpl = ColorImpl{desc:"red"};
-pub const BLACK: ColorImpl = ColorImpl{desc:"black"};
+pub const RED: Color= Color{desc:"red"};
+pub const BLACK: Color= Color{desc:"black"};
 
-pub const COLORS: [ColorImpl, ..2] = [BLACK, RED];
+pub const COLORS: [Color, ..2] = [BLACK, RED];
 
 #[test]
 fn test_colors() {
