@@ -1,6 +1,7 @@
 use cards::value;
 use cards::value::Value;
 use cards::card::Card;
+use std::fmt;
 
 pub const INDEX_TO_SCORE: [uint, ..13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 pub fn scoreForValue(v: &Value) -> uint {
@@ -14,6 +15,7 @@ pub trait BJHand<'a> {
     fn addCard(&mut self, Card);
     fn removeCard(&mut self, Card);
     fn splitNumber(&self) -> uint;
+    fn cards(&self) -> &Vec<Card>;
 }
 
 pub struct BJHandImpl<'a> {
@@ -21,9 +23,21 @@ pub struct BJHandImpl<'a> {
     aceCount: uint,
     splitNumber: uint,
     numCards: uint,
+    cards: Vec<Card>,
 }
 
+impl <'a>fmt::Show for BJHandImpl<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.cards)
+    }
+}
+
+
 impl <'a>BJHand<'a> for BJHandImpl<'a> {
+    fn cards(&self) -> &Vec<Card> {
+        &self.cards
+    }
+
     fn score(&self) -> uint {
         if self.isSoft() {
             return self.score + 10;
@@ -35,6 +49,7 @@ impl <'a>BJHand<'a> for BJHandImpl<'a> {
         return self.aceCount > 0 && self.score + 10 <= 21;
     }
     fn len(&self) -> uint {
+        assert_eq!(self.numCards, self.cards.len());
         return self.numCards;
     }
     fn splitNumber(&self) -> uint {
@@ -46,6 +61,7 @@ impl <'a>BJHand<'a> for BJHandImpl<'a> {
         if card.value().index() == value::ACE.index() {
             self.aceCount += 1;
         }
+        self.cards.push(card);
     }
 
     fn removeCard(&mut self, card: Card) {
@@ -57,6 +73,14 @@ impl <'a>BJHand<'a> for BJHandImpl<'a> {
             assert!(self.aceCount >= 1);
             self.aceCount -= 1;
         }
+        for i in range(0, self.cards.len()) {
+            let c = self.cards[i];
+            if c.suit().index() == card.suit().index() && c.value().index() == card.value().index() {
+                self.cards.swap_remove(i);
+                return;
+            }
+        }
+        fail!("Could not find the card in the hand");
     }
 }
 
@@ -67,6 +91,7 @@ impl <'a>BJHandImpl<'a> {
             aceCount: 0,
             splitNumber: 0,
             numCards: 0,
+            cards: Vec::new(),
         }
     }
 }

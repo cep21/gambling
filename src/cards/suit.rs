@@ -1,4 +1,5 @@
 use cards::color;
+use std::fmt;
 
 pub struct Suit {
     desc: &'static str,
@@ -15,6 +16,24 @@ impl Suit {
     }
     pub fn index(&self) -> uint {
         return self.i;
+    }
+    pub fn char(&self) -> char {
+        match self.desc.chars().next() {
+            Some(c) => c,
+            None => '?',
+        }
+    }
+}
+
+impl fmt::Show for Suit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.desc())
+    }
+}
+
+impl PartialEq for Suit {
+    fn eq(&self, other: &Suit) -> bool {
+        self.desc == other.desc
     }
 }
 
@@ -33,4 +52,6 @@ fn test_suits() {
     assert_eq!("heart", HEART.desc());
     assert_eq!("diamond", DIAMOND.desc());
     assert_eq!(0, SPADE.index());
+    assert_eq!(SPADE, SPADE);
+    println!("{}", SPADE);
 }

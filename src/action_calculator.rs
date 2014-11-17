@@ -69,16 +69,16 @@ impl ActionCalculator for ActionCalculatorImpl {
             let player_score = player_hand.score();
             assert!(player_score <= 21);
             if dealer_score > 21 {
-                return Some(1.0);
+                return Some(2.0);
             } else  if dealer_score > player_score {
-                return Some(-1.0);
-            } else if dealer_score < player_score {
-                return Some(1.0);
-            } else {
                 return Some(0.0);
+            } else if dealer_score < player_score {
+                return Some(2.0);
+            } else {
+                return Some(1.0);
             }
         } else {
-            println!("Iterate");
+            println!("Iterate {}", dealer_hand.cards());
             // The dealer hits ... takes a random card
             let mut final_result = 0.0;
             for &v in VALUES.iter() {
@@ -146,7 +146,38 @@ fn test_expected_21() {
     match result {
         None => fail!("Should not happen"),
         Some(c) => {
-            assert_eq!(535, (c * 1000.0) as int);
+            assert_eq!(1453, (c * 1000.0) as int);
+        }
+    }
+}
+
+#[test]
+fn test_expected_infinite_deck() {
+    use shoe::randomshoe::new_infinite_shoe;
+    use cards::value;
+    use rules::BJRulesImpl;
+    let a = ActionCalculatorImpl;
+    let rules = BJRulesImpl;
+    let mut player_hand = BJHandImpl::new();
+    let mut shoe = new_infinite_shoe();
+    player_hand.addCard(get(shoe.remove(&value::TEN)));
+//    player_hand.addCard(get(shoe.remove(&value::TEN)));
+    player_hand.addCard(get(shoe.remove(&value::SIX)));
+    player_hand.addCard(get(shoe.remove(&value::FIVE)));
+
+    let mut dealer_hand = BJHandImpl::new();
+    dealer_hand.addCard(get(shoe.remove(&value::TEN)));
+
+    println!("starting");
+    let result = a.expected_with_dealer(&player_hand,
+                                        &mut dealer_hand,
+                                        &mut shoe,
+                                        &rules);
+    println!("result is {}",result);
+    match result {
+        None => fail!("Should not happen"),
+        Some(c) => {
+            assert_eq!(962, (c * 1000.0) as int);
         }
     }
 }

@@ -53,6 +53,28 @@ impl SuitPicker for CycleSuitPicker {
     }
 }
 
+struct RandomSuitPicker;
+
+impl SuitPicker for RandomSuitPicker {
+    fn suit(&mut self) -> Option<Suit> {
+        let suit_index = rand::random::<uint>() % SUITS.len();
+        return Some(SUITS[suit_index % 4]);
+    }
+    fn insert(&mut self, s: &Suit) {
+        // Infinite deck.  Does nothing
+    }
+    fn count(&self, v: &Suit) -> uint {
+        return 1;
+    }
+    fn remove(&mut self, val: &Suit) -> Option<Suit>{
+        return Some(SUITS[val.index()])
+    }
+    fn len(&self) -> uint {
+        return 4;
+    }
+}
+
+
 struct RandomValuePicker;
 
 impl ValuePicker for RandomValuePicker {
@@ -321,6 +343,19 @@ pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
     for _ in range (0, 13u) {
         sp.push(box RandomDeckSuitPicker::new(1));
+    }
+    GenericDirectShoe {
+        valuePicker: box vp,
+        suitPickers: sp.into_boxed_slice(),
+    }
+    //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
+}
+
+pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
+    let vp = RandomValuePicker;
+    let mut sp : Vec<Box<SuitPicker>> = Vec::new();
+    for _ in range (0, 13u) {
+        sp.push(box RandomSuitPicker);
     }
     GenericDirectShoe {
         valuePicker: box vp,
