@@ -2,14 +2,14 @@ use cards::suit;
 use cards::card::Card;
 use cards::value;
 
-pub fn cards_in_deck<'a>(numDecks: uint) -> Vec<Card<'a>> {
+pub fn cards_in_deck<'a>(num_decks: uint) -> Vec<Card> {
     let mut ret = Vec::new();
     ret.clear();
-    ret.reserve_exact(52 * numDecks);
-    for i in range(0, numDecks) {
+    ret.reserve_exact(52 * num_decks);
+    for _ in range(0, num_decks) {
         for &s in suit::SUITS.iter() {
             for &v in value::VALUES.iter() {
-                ret.push(Card::new(&v,&s));
+                ret.push(Card::new(v,s));
             }
         }
     }
@@ -18,7 +18,6 @@ pub fn cards_in_deck<'a>(numDecks: uint) -> Vec<Card<'a>> {
 
 #[test]
 fn test_decks() {
-    let mut v = Vec::new();
-    let d = cards_in_deck(2, &mut v);
+    let d = cards_in_deck(2);
     assert_eq!(104, d.len());
 }

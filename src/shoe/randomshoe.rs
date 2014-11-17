@@ -6,18 +6,18 @@ use cards::suit::Suit;
 use cards::suit::SUITS;
 use std::rand;
 
-pub trait SuitPicker<'a> {
-    fn suit(&mut self) -> Option<&'a Suit>;
-    fn insert(&mut self, &'a Suit);
-    fn remove(&mut self, &'a Suit) -> Option<&'a Suit>;
-    fn count(&self, s: &'a Suit) -> uint;
+pub trait SuitPicker {
+    fn suit(&mut self) -> Option<Suit>;
+    fn insert(&mut self, &Suit);
+    fn remove(&mut self, &Suit) -> Option<Suit>;
+    fn count(&self, s: &Suit) -> uint;
     fn len(&self) -> uint;
 }
 
-pub trait ValuePicker<'a> {
-    fn value(&mut self) -> Option<&'a Value>;
+pub trait ValuePicker {
+    fn value(&mut self) -> Option<Value>;
     fn count(&self, v: &Value) -> uint;
-    fn remove(&mut self, v: &Value) -> Option<&'a Value>;
+    fn remove(&mut self, v: &Value) -> Option<Value>;
     fn insert(&mut self, v: &Value);
     fn len(&self) -> uint;
 }
@@ -27,17 +27,17 @@ struct CycleSuitPicker {
 }
 
 impl CycleSuitPicker {
-    fn new() -> CycleSuitPicker {
+    pub fn new() -> CycleSuitPicker {
         return CycleSuitPicker {
             suit_index: 0,
         }
     }
 }
 
-impl <'a>SuitPicker<'a> for CycleSuitPicker {
-    fn suit(&mut self) -> Option<&'a Suit> {
+impl SuitPicker for CycleSuitPicker {
+    fn suit(&mut self) -> Option<Suit> {
         self.suit_index += 1;
-        return Some(&SUITS[self.suit_index % 4]);
+        return Some(SUITS[self.suit_index % 4]);
     }
     fn insert(&mut self, s: &Suit) {
         unimplemented!()
@@ -45,8 +45,8 @@ impl <'a>SuitPicker<'a> for CycleSuitPicker {
     fn count(&self, v: &Suit) -> uint {
         return 1;
     }
-    fn remove(&mut self, val: &Suit) -> Option<&'a Suit>{
-        return Some(&SUITS[val.index()])
+    fn remove(&mut self, val: &Suit) -> Option<Suit>{
+        return Some(SUITS[val.index()])
     }
     fn len(&self) -> uint {
         return 4;
@@ -55,17 +55,17 @@ impl <'a>SuitPicker<'a> for CycleSuitPicker {
 
 struct RandomValuePicker;
 
-impl <'a>ValuePicker<'a> for RandomValuePicker {
-    fn value(&mut self) -> Option<&'a Value> {
+impl ValuePicker for RandomValuePicker {
+    fn value(&mut self) -> Option<Value> {
         let valueIndex = rand::random::<uint>() % VALUES.len();
-        Some(&VALUES[valueIndex])
+        Some(VALUES[valueIndex])
     }
     fn count(&self, v: &Value) -> uint {
         // Assumes full single deck
         return 4;
     }
-    fn remove(&mut self, v: &Value) -> Option<&'a Value> {
-        return Some(&VALUES[v.index()]);
+    fn remove(&mut self, v: &Value) -> Option<Value> {
+        return Some(VALUES[v.index()]);
     }
     fn insert(&mut self, v: &Value) {
         // infinite deck.  Nothing done
@@ -74,11 +74,6 @@ impl <'a>ValuePicker<'a> for RandomValuePicker {
         // Assume full single deck
         return 52;
     }
-}
-
-struct ValueCount {
-    value: Value,
-    counts: uint,
 }
 
 struct IntCount {
@@ -121,7 +116,7 @@ impl RandomItemPicker {
                 current += self.indexed_value_counts[index].counts;
                 index_in_loop += 1;
             } else {
-                self.non_zero_index_counts.remove(index_in_loop);
+                self.non_zero_index_counts.swap_remove(index_in_loop);
             }
         }
         return None;
@@ -200,19 +195,19 @@ impl RandomDeckValuePicker {
     }
 }
 
-impl <'a>ValuePicker<'a> for RandomDeckValuePicker {
-    fn value(&mut self) -> Option<&'a Value> {
+impl ValuePicker for RandomDeckValuePicker {
+    fn value(&mut self) -> Option<Value> {
         match self.item_picker.value() {
-            Some(c) => Some(&VALUES[c]),
+            Some(c) => Some(VALUES[c]),
             None => None
         }
     }
     fn count(&self, v: &Value) -> uint {
         self.item_picker.count(v.index())
     }
-    fn remove(&mut self, val: &Value) -> Option<&'a Value> {
+    fn remove(&mut self, val: &Value) -> Option<Value> {
         match self.item_picker.remove(val.index()) {
-            true => Some(&VALUES[val.index()]),
+            true => Some(VALUES[val.index()]),
             false => None,
         }
     }
@@ -237,19 +232,19 @@ impl RandomDeckSuitPicker {
     }
 }
 
-impl <'a>SuitPicker<'a> for RandomDeckSuitPicker {
-    fn suit(&mut self) -> Option<&'a Suit> {
+impl SuitPicker for RandomDeckSuitPicker {
+    fn suit(&mut self) -> Option<Suit> {
         match self.item_picker.value() {
-            Some(c) => Some(&SUITS[c]),
+            Some(c) => Some(SUITS[c]),
             None => None
         }
     }
     fn count(&self, v: &Suit) -> uint {
         self.item_picker.count(v.index())
     }
-    fn remove(&mut self, val: &Suit) -> Option<&'a Suit> {
+    fn remove(&mut self, val: &Suit) -> Option<Suit> {
         match self.item_picker.remove(val.index()) {
-            true => Some(&SUITS[val.index()]),
+            true => Some(SUITS[val.index()]),
             false => None,
         }
     }
@@ -263,8 +258,8 @@ impl <'a>SuitPicker<'a> for RandomDeckSuitPicker {
 
 
 pub struct GenericDirectShoe<'a> {
-    valuePicker: Box<ValuePicker<'a> + 'a>,
-    suitPickers: Box<[Box<SuitPicker<'a> + 'a>]>
+    valuePicker: Box<ValuePicker + 'a>,
+    suitPickers: Box<[Box<SuitPicker + 'a>]>
 }
 /*
 impl <'a>GenericDirectShoe<'a> {
@@ -277,8 +272,8 @@ impl <'a>GenericDirectShoe<'a> {
     }
 }
 */
-impl <'a>DirectShoe<'a> for GenericDirectShoe<'a> {
-    fn pop(&mut self) -> Option<Card<'a>> {
+impl <'a>DirectShoe for GenericDirectShoe<'a> {
+    fn pop(&mut self) -> Option<Card> {
         return match self.valuePicker.value() {
             Some(v) => {
                 let ref mut picker = self.suitPickers[v.index()];
@@ -302,7 +297,7 @@ impl <'a>DirectShoe<'a> for GenericDirectShoe<'a> {
     fn count(&self, v: &Value) -> uint {
         return self.valuePicker.count(v);
     }
-    fn remove(&mut self, v: &Value) -> Option<Card<'a>> {
+    fn remove(&mut self, v: &Value) -> Option<Card> {
         return match self.valuePicker.remove(v) {
             None => None,
             Some(val) => match self.suitPickers[v.index()].suit() {
@@ -315,7 +310,7 @@ impl <'a>DirectShoe<'a> for GenericDirectShoe<'a> {
             }
         }
     }
-    fn insert(&mut self, v: &'a Card) {
+    fn insert(&mut self, v: &Card) {
         self.valuePicker.insert(v.value());
         self.suitPickers[v.value().index()].insert(v.suit());
     }

@@ -3,7 +3,7 @@ pub struct Color {
 }
 
 impl Color {
-    fn desc(&self) -> &str {
+    pub fn desc(&self) -> &str {
         return self.desc
     }
 }

@@ -1,20 +1,19 @@
 use cards::value::Value;
-use cards::value;
 use cards::card::Card;
 
-pub trait DirectShoe<'a> {
-    fn pop(&mut self) -> Option<Card<'a>>;
+pub trait DirectShoe {
+    fn pop(&mut self) -> Option<Card>;
     fn len(&self) -> uint;
     fn count(&self, v: &Value) -> uint;
-    fn remove(&mut self, v: &Value) -> Option<Card<'a>>;
-    fn insert(&mut self, v: &'a Card);
+    fn remove(&mut self, v: &Value) -> Option<Card>;
+    fn insert(&mut self, v: &Card);
 }
 
 // TODO: define only for test?
+#[cfg(test)]
 pub fn test_single_deck(ds: &mut DirectShoe) {
-    use cards::card::Card;
-    use cards::value::Value;
     use cards::value::ACE;
+    use cards::value;
     use std::collections::HashSet;
     assert_eq!(52, ds.len());
 

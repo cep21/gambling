@@ -25,19 +25,19 @@ impl <'a>WantCardDecision<'a> for DealerCardDecision {
 #[test]
 fn test_hand() {
     use cards::value;
-    use cards::card::CardImpl;
     use cards::suit;
+    use cards::card::Card;
     let d = DealerCardDecision{
         hitSoft17: true,
     };
     let h = &mut BJHandImpl::new();
     assert_eq!(true, d.shouldDeal(h))
-    h.addCard(CardImpl::new(value::TEN, suit::SPADE));
+    h.addCard(Card::new(value::TEN, suit::SPADE));
     assert_eq!(true, d.shouldDeal(h))
-    h.addCard(CardImpl::new(value::TWO, suit::SPADE));
+    h.addCard(Card::new(value::TWO, suit::SPADE));
     assert_eq!(true, d.shouldDeal(h))
-    h.addCard(CardImpl::new(value::ACE, suit::SPADE));
+    h.addCard(Card::new(value::ACE, suit::SPADE));
     assert_eq!(true, d.shouldDeal(h))
-    h.addCard(CardImpl::new(value::KING, suit::SPADE));
+    h.addCard(Card::new(value::KING, suit::SPADE));
     assert_eq!(false, d.shouldDeal(h))
 }

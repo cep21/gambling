@@ -1,17 +1,14 @@
 use cards::value;
 use cards::value::Value;
-use cards::card;
 use cards::card::Card;
-use shoe::shoe;
-use shoe::deck::cards_in_deck;
 use shoe::shoe::DirectShoe;
 
 pub struct DirectActualShoe<'a> {
-    cards: &'a mut Vec<Card<'a>>,
+    cards: &'a mut Vec<Card>,
 }
 
-impl <'a>shoe::DirectShoe<'a> for DirectActualShoe<'a> {
-    fn pop(&mut self) -> Option<Card<'a>> {
+impl <'a>DirectShoe for DirectActualShoe<'a> {
+    fn pop(&mut self) -> Option<Card> {
         return self.cards.pop();
     }
     fn len(&self) -> uint {
@@ -26,10 +23,16 @@ impl <'a>shoe::DirectShoe<'a> for DirectActualShoe<'a> {
         }
         return r;
     }
-    fn remove(&mut self, v: &Value) -> Option<Card<'a>> {
+    fn remove(&mut self, v: &Value) -> Option<Card> {
+        for i in range(0, self.cards.len()) {
+            if (*self.cards)[i].value().index() == v.index() {
+                return self.cards.swap_remove(i);
+            }
+        }
         return None;
     }
     fn insert(&mut self, v: &Card) {
+        self.cards.push(*v);
     }
 }
 
@@ -45,12 +48,18 @@ impl <'a> DirectActualShoe<'a> {
 
 #[test]
 fn test_direct() {
+    use shoe::directshoe::DirectActualShoe;
+    use shoe::shoe::test_single_deck;
+    use shoe::deck::cards_in_deck;
     let v = &mut Vec::new();
-    let ds = DirectActualShoe::new(v);
+    let ds = DirectActualShoe{
+        cards: v
+    };
     assert_eq!(0, ds.len());
 
-    let v2 = &mut Vec::new();
-    let mut ds2 = DirectActualShoe::new(cards_in_deck(1, v2));
+    let mut ds2 = DirectActualShoe {
+        cards: &mut cards_in_deck(1),
+    };
 
-//    shoe::test_single_deck(&mut ds2);
+    test_single_deck(&mut ds2);
 }
