@@ -16,6 +16,7 @@ pub struct BJHand {
     splits_done: uint,
     splits_to_solve: uint,
     num_cards: uint,
+    double_count: uint,
     // The first two cards are very important for blackjack
     cards: Vec<Card>,
 }
@@ -42,6 +43,19 @@ impl BJHand {
 
     pub fn is_soft(&self) -> bool {
         return self.ace_count > 0 && self.score + 10 <= 21;
+    }
+
+    pub fn double_count(&self) -> uint {
+        self.double_count
+    }
+
+    pub fn add_double_count(&mut self) {
+        self.double_count += 1
+    }
+
+    pub fn subtract_double_count(&mut self) {
+        assert!(self.double_count >= 1);
+        self.double_count -= 1;
     }
 
     pub fn len(&self) -> uint {
@@ -88,6 +102,7 @@ impl BJHand {
             splits_done: 0,
             splits_to_solve: 0,
             num_cards: 0,
+            double_count: 0,
             cards: Vec::new(),
         }
     }

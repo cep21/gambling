@@ -38,7 +38,7 @@ impl BJRules {
     }
 
     pub fn can_hit(&self, h: &BJHand) -> bool {
-        h.score() < 21
+        h.score() < 21 && h.double_count() == 0
     }
 
     pub fn dealer_blackjack_after_hand(&self) -> bool {

@@ -94,7 +94,30 @@ impl ActionCalculator for ActionCalculatorImpl {
             DOUBLE => {
                 match rules.can_double(hand) {
                     false => None,
-                    true => Some(-1.0),
+                    true => {
+                        let mut final_result = 0.0;
+                        for &v in VALUES.iter() {
+                            let count_of_val = d.count(&v);
+                            if count_of_val > 0 {
+                                let odds_of_value = count_of_val as f64 / d.len() as f64;
+                                let card_from_deck = match d.remove(&v) {
+                                    Some(c) => c,
+                                    None => {
+                                        panic!("Count positive, but couldn't remove!");
+                                    }
+                                };
+                                hand.add_card(card_from_deck);
+                                hand.add_double_count();
+                                let ev_with_value = 2.0 * self.expected_value_best_action(
+                                    hand, dealer_up_card, d, rules);
+                                final_result += odds_of_value * ev_with_value;
+                                hand.remove_card(card_from_deck);
+                                hand.subtract_double_count();
+                                d.insert(&card_from_deck);
+                            }
+                        }
+                        Some(final_result)
+                    }
                 }
             }
             SPLIT => {
@@ -240,34 +263,51 @@ mod tests {
     }
 
     #[test]
-    fn test_expected_best_value_can_surrender() {
+    fn test_expected_best_value_surr_16_a() {
         let rules = BJRules::new_complex(true);
         check_best_value_rules(&value::ACE,   &vec![value::TEN, value::SIX], -0.5, &rules);
     }
 
     #[test]
-    fn test_expected_best_value_infinite1() {
+    fn test_expected_best_value_11_6() {
+        check_best_value(&value::SIX,   &vec![value::FIVE, value::SIX], 0.667380);
+    }
+
+    #[test]
+    fn test_expected_best_value_9_2() {
+        // HIT
+        check_best_value(&value::TWO,   &vec![value::FIVE, value::FOUR], 0.074446);
+    }
+
+    #[test]
+    fn test_expected_best_value_9_3() {
+        // DOUBLE
+        check_best_value(&value::THREE,   &vec![value::FIVE, value::FOUR], 0.120816);
+    }
+
+    #[test]
+    fn test_expected_best_value_18_a() {
         check_best_value(&value::ACE,    &vec![value::TEN, value::EIGHT]           , -0.100199);
     }
 
     #[test]
-    fn test_expected_best_value_infinite2() {
+    fn test_expected_best_value_21_2() {
         check_value(&vec![value::TWO],   &vec![value::TEN, value::FIVE, value::SIX],  0.882007);
         check_value(&vec![value::TWO],   &vec![value::TEN, value::TEN]             ,  0.639987);
     }
 
     #[test]
-    fn test_expected_best_value_infinite3() {
+    fn test_expected_best_value_15_9() {
         check_best_value(&value::NINE,  &vec![value::TEN, value::FIVE]             , -0.471578);
     }
 
     #[test]
-    fn test_expected_best_value_infinite4() {
+    fn test_expected_best_value_16_7() {
         check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
     }
 
     #[test]
-    fn test_expected_best_value_infinite5() {
+    fn test_expected_best_value_20_10() {
         check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
     }
 
