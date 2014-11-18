@@ -1,10 +1,10 @@
 use hand::BJHand;
 use bjaction::BJAction;
-use bjaction::HIT;
-use bjaction::STAND;
-use bjaction::DOUBLE;
-use bjaction::SURRENDER;
-use bjaction::SPLIT;
+use bjaction::BJAction::HIT;
+use bjaction::BJAction::STAND;
+use bjaction::BJAction::DOUBLE;
+use bjaction::BJAction::SURRENDER;
+use bjaction::BJAction::SPLIT;
 use cards::card::Card;
 use cards::value::VALUES;
 use cards::value::ACE;
