@@ -185,6 +185,7 @@ mod tests {
     use shoe::shoe::DirectShoe;
     use hand::BJHand;
     use std::num::Float;
+    use cards::value;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
@@ -220,10 +221,7 @@ mod tests {
 
     #[test]
     fn test_expected_infinite_deck() {
-        use cards::value;
         // Numbers checked against http://wizardofodds.com/games/blackjack/appendix/1/
-        check_value(&vec![value::TWO],   &vec![value::TEN, value::FIVE, value::SIX],  0.882007);
-        check_value(&vec![value::TWO],   &vec![value::TEN, value::TEN]             ,  0.639987);
         check_value(&vec![value::FOUR],  &vec![value::TEN, value::EIGHT]           ,  0.175854);
         check_value(&vec![value::SIX],   &vec![value::TEN, value::SIX]             , -0.153699);
         check_value(&vec![value::SEVEN], &vec![value::TEN, value::TEN]             ,  0.773227);
@@ -234,18 +232,35 @@ mod tests {
         check_value(&vec![value::TEN],   &vec![value::TEN, value::SEVEN]           , -0.419721);
         check_value(&vec![value::ACE],   &vec![value::TEN, value::SIX]             , -0.666951);
         check_value(&vec![value::ACE],   &vec![value::TEN, value::EIGHT]           , -0.100199);
+    }
 
+    #[test]
+    fn test_expected_best_value_infinite1() {
         check_best_value(&value::ACE,    &vec![value::TEN, value::EIGHT]           , -0.100199);
+        check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
+    }
 
-        check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
+    #[test]
+    fn test_expected_best_value_infinite2() {
+        check_value(&vec![value::TWO],   &vec![value::TEN, value::FIVE, value::SIX],  0.882007);
+        check_value(&vec![value::TWO],   &vec![value::TEN, value::TEN]             ,  0.639987);
+    }
+
+    #[test]
+    fn test_expected_best_value_infinite3() {
         check_best_value(&value::NINE,  &vec![value::TEN, value::FIVE]             , -0.471578);
+    }
+
+    #[test]
+    fn test_expected_best_value_infinite4() {
+        check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
     }
 
     #[bench]
     fn bench_with_calc(b: &mut Bencher) {
         use cards::value;
         b.iter(|| {
-            check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
+            check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
         });
     }
 }
