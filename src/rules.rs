@@ -18,8 +18,7 @@ impl BJRules for BJRulesImpl {
         return h.len() == 2;
     }
     fn can_split(&self, h: &BJHand) -> bool {
-        // TODO:
-        return false;
+        h.split_number() < 4
     }
     fn can_surrender(&self, h: &BJHand) -> bool {
         h.len() == 2 && h.split_number() == 0
