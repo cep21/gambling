@@ -160,7 +160,7 @@ impl RandomItemPicker {
                 }
             };
             let ref mut value_to_look = self.indexed_value_counts.get_mut(
-                value_count_index_to_consider);
+                value_count_index_to_consider).unwrap();
             let value_to_ret = value_to_look.value;
             if value_to_look.counts == 0 {
                 None
@@ -181,7 +181,7 @@ impl RandomItemPicker {
         return self.indexed_value_counts[v].counts;
     }
     fn remove(&mut self, val: uint) -> bool {
-        let ref mut v = self.indexed_value_counts.get_mut(val);
+        let ref mut v = self.indexed_value_counts.get_mut(val).unwrap();
         match v.counts == 0 {
             true => false,
             false => {

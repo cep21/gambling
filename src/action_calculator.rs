@@ -184,13 +184,7 @@ mod tests {
     use cards::value::Value;
     use shoe::shoe::DirectShoe;
     use hand::BJHand;
-
-    fn get<T>(i: Option<T>) -> T {
-        match i {
-            Some(x) => x,
-            None => panic!("Expect value")
-        }
-    }
+    use std::num::Float;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
@@ -200,11 +194,11 @@ mod tests {
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0;
         assert_eq!(
-            (get(a.expected_with_dealer(
-                &get(BJHand::new_from_deck(&mut shoe, player_cards)),
-                &mut get(BJHand::new_from_deck(&mut shoe, dealer_cards)),
+            (a.expected_with_dealer(
+                &BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
+                &mut BJHand::new_from_deck(&mut shoe, dealer_cards).unwrap(),
                 &mut shoe,
-                &rules)) * expansion).round(),
+                &rules).unwrap() * expansion).round(),
             expected * expansion);
     }
 
@@ -217,8 +211,8 @@ mod tests {
         let expansion = 1000000.0;
         assert_eq!(
             (a.expected_value_best_action(
-                &mut get(BJHand::new_from_deck(&mut shoe, player_cards)),
-                &get(shoe.remove(dealer_up_card)),
+                &mut BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
+                &shoe.remove(dealer_up_card).unwrap(),
                 &mut shoe,
                 &rules) * expansion).round(),
             expected * expansion);
@@ -251,7 +245,6 @@ mod tests {
     fn bench_with_calc(b: &mut Bencher) {
         use cards::value;
         b.iter(|| {
-    //        check_best_value(&value::TWO,    &vec![value::TEN, value::TWO]             , -0.253390)
             check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
         });
     }
