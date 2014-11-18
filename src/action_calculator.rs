@@ -20,19 +20,20 @@ pub trait ActionCalculator {
     fn expected_value(&self, h: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64>;
-    fn expected_with_dealer(&self, player_hand: &BJHand, dealer_hand: &mut BJHand,
-                            d: &mut DirectShoe, rules: &BJRules) -> Option<f64>;
-    fn expected_value_best_action(&self, hand: &mut BJHand, dealer_up_card: &Card,
-                      d: &mut DirectShoe,
-                      rules: &BJRules) -> f64;
+    fn expected_with_dealer(&self, player_hand: &BJHand,
+                            dealer_hand: &mut BJHand, d: &mut DirectShoe,
+                            rules: &BJRules) -> Option<f64>;
+    fn expected_value_best_action(&self, hand: &mut BJHand,
+                                  dealer_up_card: &Card, d: &mut DirectShoe,
+                                  rules: &BJRules) -> f64;
 }
 
 pub struct ActionCalculatorImpl;
 
 impl ActionCalculator for ActionCalculatorImpl {
-    fn expected_value_best_action(&self, hand: &mut BJHand, dealer_up_card: &Card,
-                      d: &mut DirectShoe,
-                      rules: &BJRules) -> f64 {
+    fn expected_value_best_action(&self, hand: &mut BJHand,
+                                  dealer_up_card: &Card, d: &mut DirectShoe,
+                                  rules: &BJRules) -> f64 {
         if hand.score() > 21 {
             // Bust... loose bet
             return -1.0;
@@ -135,8 +136,9 @@ impl ActionCalculator for ActionCalculatorImpl {
             }
         }
     }
-    fn expected_with_dealer(&self, player_hand: &BJHand, dealer_hand: &mut BJHand,
-                            d: &mut DirectShoe, rules: &BJRules) -> Option<f64> {
+    fn expected_with_dealer(&self, player_hand: &BJHand,
+                            dealer_hand: &mut BJHand, d: &mut DirectShoe,
+                            rules: &BJRules) -> Option<f64> {
         if !rules.should_hit_dealer_hand(dealer_hand) {
             let dealer_score = dealer_hand.score();
             let player_score = player_hand.score();
