@@ -1,7 +1,4 @@
-extern crate test;
-use self::test::Bencher;
 use hand::BJHand;
-use cards::value::Value;
 use bjaction::BJAction;
 use bjaction::HIT;
 use bjaction::STAND;
@@ -177,76 +174,85 @@ impl ActionCalculator for ActionCalculatorImpl {
     }
 }
 
+
 #[cfg(test)]
-fn get<T>(i: Option<T>) -> T {
-    match i {
-        Some(x) => x,
-        None => fail!("Expect value")
+mod tests {
+    extern crate test;
+    use action_calculator::ActionCalculatorImpl;
+    use action_calculator::ActionCalculator;
+    use self::test::Bencher;
+    use cards::value::Value;
+    use shoe::shoe::DirectShoe;
+    use hand::BJHand;
+
+    fn get<T>(i: Option<T>) -> T {
+        match i {
+            Some(x) => x,
+            None => fail!("Expect value")
+        }
     }
-}
 
-#[cfg(test)]
-fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f64) {
-    use shoe::randomshoe::new_infinite_shoe;
-    use rules::BJRulesImpl;
-    let a = ActionCalculatorImpl;
-    let rules = BJRulesImpl;
-    let mut shoe = new_infinite_shoe();
-    let expansion = 1000000.0;
-    assert_eq!(
-        (get(a.expected_with_dealer(
-            &get(BJHand::new_from_deck(&mut shoe, player_cards)),
-            &mut get(BJHand::new_from_deck(&mut shoe, dealer_cards)),
-            &mut shoe,
-            &rules)) * expansion).round(),
-        expected * expansion);
-}
+    fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f64) {
+        use shoe::randomshoe::new_infinite_shoe;
+        use rules::BJRulesImpl;
+        let a = ActionCalculatorImpl;
+        let rules = BJRulesImpl;
+        let mut shoe = new_infinite_shoe();
+        let expansion = 1000000.0;
+        assert_eq!(
+            (get(a.expected_with_dealer(
+                &get(BJHand::new_from_deck(&mut shoe, player_cards)),
+                &mut get(BJHand::new_from_deck(&mut shoe, dealer_cards)),
+                &mut shoe,
+                &rules)) * expansion).round(),
+            expected * expansion);
+    }
 
-#[cfg(test)]
-fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>, expected: f64) {
-    use shoe::randomshoe::new_infinite_shoe;
-    use rules::BJRulesImpl;
-    let a = ActionCalculatorImpl;
-    let rules = BJRulesImpl;
-    let mut shoe = new_infinite_shoe();
-    let expansion = 1000000.0;
-    assert_eq!(
-        (a.expected_value_best_action(
-            &mut get(BJHand::new_from_deck(&mut shoe, player_cards)),
-            &get(shoe.remove(dealer_up_card)),
-            &mut shoe,
-            &rules) * expansion).round(),
-        expected * expansion);
-}
+    fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>, expected: f64) {
+        use shoe::randomshoe::new_infinite_shoe;
+        use rules::BJRulesImpl;
+        let a = ActionCalculatorImpl;
+        let rules = BJRulesImpl;
+        let mut shoe = new_infinite_shoe();
+        let expansion = 1000000.0;
+        assert_eq!(
+            (a.expected_value_best_action(
+                &mut get(BJHand::new_from_deck(&mut shoe, player_cards)),
+                &get(shoe.remove(dealer_up_card)),
+                &mut shoe,
+                &rules) * expansion).round(),
+            expected * expansion);
+    }
 
-#[test]
-fn test_expected_infinite_deck() {
-    use cards::value;
-    // Numbers checked against http://wizardofodds.com/games/blackjack/appendix/1/
-    check_value(&vec![value::TWO],   &vec![value::TEN, value::FIVE, value::SIX],  0.882007);
-    check_value(&vec![value::TWO],   &vec![value::TEN, value::TEN]             ,  0.639987);
-    check_value(&vec![value::FOUR],  &vec![value::TEN, value::EIGHT]           ,  0.175854);
-    check_value(&vec![value::SIX],   &vec![value::TEN, value::SIX]             , -0.153699);
-    check_value(&vec![value::SEVEN], &vec![value::TEN, value::TEN]             ,  0.773227);
-    check_value(&vec![value::SEVEN], &vec![value::TEN, value::SEVEN]           , -0.106809);
-    check_value(&vec![value::NINE],  &vec![value::TEN, value::FIVE]            , -0.543150);
-    check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
-    check_value(&vec![value::TEN],   &vec![value::TEN, value::FIVE, value::SIX],  0.962624);
-    check_value(&vec![value::TEN],   &vec![value::TEN, value::SEVEN]           , -0.419721);
-    check_value(&vec![value::ACE],   &vec![value::TEN, value::SIX]             , -0.666951);
-    check_value(&vec![value::ACE],   &vec![value::TEN, value::EIGHT]           , -0.100199);
-
-    check_best_value(&value::ACE,    &vec![value::TEN, value::EIGHT]           , -0.100199);
-
-    check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
-    check_best_value(&value::NINE,  &vec![value::TEN, value::FIVE]             , -0.471578);
-}
-
-#[bench]
-fn bench_with_calc(b: &mut Bencher) {
-    use cards::value;
-    b.iter(|| {
-//        check_best_value(&value::TWO,    &vec![value::TEN, value::TWO]             , -0.253390)
+    #[test]
+    fn test_expected_infinite_deck() {
+        use cards::value;
+        // Numbers checked against http://wizardofodds.com/games/blackjack/appendix/1/
+        check_value(&vec![value::TWO],   &vec![value::TEN, value::FIVE, value::SIX],  0.882007);
+        check_value(&vec![value::TWO],   &vec![value::TEN, value::TEN]             ,  0.639987);
+        check_value(&vec![value::FOUR],  &vec![value::TEN, value::EIGHT]           ,  0.175854);
+        check_value(&vec![value::SIX],   &vec![value::TEN, value::SIX]             , -0.153699);
+        check_value(&vec![value::SEVEN], &vec![value::TEN, value::TEN]             ,  0.773227);
+        check_value(&vec![value::SEVEN], &vec![value::TEN, value::SEVEN]           , -0.106809);
+        check_value(&vec![value::NINE],  &vec![value::TEN, value::FIVE]            , -0.543150);
         check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
-    });
+        check_value(&vec![value::TEN],   &vec![value::TEN, value::FIVE, value::SIX],  0.962624);
+        check_value(&vec![value::TEN],   &vec![value::TEN, value::SEVEN]           , -0.419721);
+        check_value(&vec![value::ACE],   &vec![value::TEN, value::SIX]             , -0.666951);
+        check_value(&vec![value::ACE],   &vec![value::TEN, value::EIGHT]           , -0.100199);
+
+        check_best_value(&value::ACE,    &vec![value::TEN, value::EIGHT]           , -0.100199);
+
+        check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
+        check_best_value(&value::NINE,  &vec![value::TEN, value::FIVE]             , -0.471578);
+    }
+
+    #[bench]
+    fn bench_with_calc(b: &mut Bencher) {
+        use cards::value;
+        b.iter(|| {
+    //        check_best_value(&value::TWO,    &vec![value::TEN, value::TWO]             , -0.253390)
+            check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
+        });
+    }
 }

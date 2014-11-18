@@ -22,7 +22,7 @@ pub trait ValuePicker {
     fn len(&self) -> uint;
 }
 
-struct CycleSuitPicker {
+pub struct CycleSuitPicker {
     suit_index: uint,
 }
 
@@ -39,10 +39,10 @@ impl SuitPicker for CycleSuitPicker {
         self.suit_index += 1;
         return Some(SUITS[self.suit_index % 4]);
     }
-    fn insert(&mut self, s: &Suit) {
-        unimplemented!()
+    fn insert(&mut self, _: &Suit) {
+        // Not needed
     }
-    fn count(&self, v: &Suit) -> uint {
+    fn count(&self, _: &Suit) -> uint {
         return 1;
     }
     fn remove(&mut self, val: &Suit) -> Option<Suit>{
@@ -60,10 +60,10 @@ impl SuitPicker for RandomSuitPicker {
         let suit_index = rand::random::<uint>() % SUITS.len();
         return Some(SUITS[suit_index % 4]);
     }
-    fn insert(&mut self, s: &Suit) {
+    fn insert(&mut self, _: &Suit) {
         // Infinite deck.  Does nothing
     }
-    fn count(&self, v: &Suit) -> uint {
+    fn count(&self, _: &Suit) -> uint {
         return 1;
     }
     fn remove(&mut self, val: &Suit) -> Option<Suit>{
@@ -82,14 +82,14 @@ impl ValuePicker for RandomValuePicker {
         let value_index = rand::random::<uint>() % VALUES.len();
         Some(VALUES[value_index])
     }
-    fn count(&self, v: &Value) -> uint {
+    fn count(&self, _: &Value) -> uint {
         // Assumes full single deck
         return 4;
     }
     fn remove(&mut self, v: &Value) -> Option<Value> {
         return Some(VALUES[v.index()]);
     }
-    fn insert(&mut self, v: &Value) {
+    fn insert(&mut self, _: &Value) {
         // infinite deck.  Nothing done
     }
     fn len(&self) -> uint {
@@ -338,7 +338,7 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
     }
 }
 
-pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
+pub fn new_random_shoe<'a>() -> GenericDirectShoe<'a> {
     let vp = RandomDeckValuePicker::new(1);
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
     for _ in range (0, 13u) {
@@ -348,7 +348,6 @@ pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
         value_picker: box vp,
         suit_pickers: sp.into_boxed_slice(),
     }
-    //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
 }
 
 pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
@@ -367,7 +366,7 @@ pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
 #[test]
 fn test_random() {
     use shoe::shoe::test_single_deck;
-    let mut shoe = new_random_shoe(1);
+    let mut shoe = new_random_shoe();
     println!("starting");
     test_single_deck(&mut shoe);
 }
@@ -384,5 +383,5 @@ fn test_cycle_suit_picker() {
         }
     }
     assert_eq!(4, s.len());
-
 }
+

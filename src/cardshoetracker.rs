@@ -1,4 +1,3 @@
-use shoe;
 use cards::value::Value;
 use cards::value;
 use cards::card::Card;

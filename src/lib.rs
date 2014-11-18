@@ -12,7 +12,6 @@ pub mod shoe {
 }
 pub mod hand;
 pub mod cardshoetracker;
-pub mod dealer;
 pub mod bjaction;
 pub mod action_calculator;
 pub mod rules;
