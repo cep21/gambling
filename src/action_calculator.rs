@@ -37,7 +37,7 @@ impl ActionCalculator for ActionCalculatorImpl {
             // Bust... loose bet
             return -1.0;
         }
-        let actions = vec![HIT];//, DOUBLE, SPLIT, SURRENDER];
+        let actions = vec![HIT, DOUBLE, SPLIT, SURRENDER];
         let mut best_result = match self.expected_value(
                 hand, dealer_up_card, d, STAND, rules) {
             Some(s) => s,
@@ -106,7 +106,7 @@ impl ActionCalculator for ActionCalculatorImpl {
             SURRENDER => {
                 match rules.can_surrender(hand) {
                     false => None,
-                    true => Some(0.5),
+                    true => Some(-0.5),
                 }
             }
         }
@@ -186,37 +186,42 @@ mod tests {
     use hand::BJHand;
     use std::num::Float;
     use cards::value;
+    use rules::BJRules;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
-        use rules::BJRulesImpl;
+        use rules::BJRules;
         let a = ActionCalculatorImpl;
-        let rules = BJRulesImpl;
+        let rules = BJRules::new();
         let mut shoe = new_infinite_shoe();
-        let expansion = 1000000.0;
+        let expansion = 1000000.0f64;
         assert_eq!(
             (a.expected_with_dealer(
                 &BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
                 &mut BJHand::new_from_deck(&mut shoe, dealer_cards).unwrap(),
                 &mut shoe,
-                &rules).unwrap() * expansion).round(),
-            expected * expansion);
+                &rules).unwrap() * expansion).round() as int,
+            (expected * expansion) as int);
     }
 
     fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>, expected: f64) {
+        let rules = BJRules::new();
+        check_best_value_rules(dealer_up_card, player_cards, expected, &rules);
+    }
+
+    fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>, expected: f64,
+                             rules: &BJRules) {
         use shoe::randomshoe::new_infinite_shoe;
-        use rules::BJRulesImpl;
         let a = ActionCalculatorImpl;
-        let rules = BJRulesImpl;
         let mut shoe = new_infinite_shoe();
-        let expansion = 1000000.0;
+        let expansion = 1000000.0f64;
         assert_eq!(
             (a.expected_value_best_action(
                 &mut BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
                 &shoe.remove(dealer_up_card).unwrap(),
                 &mut shoe,
-                &rules) * expansion).round(),
-            expected * expansion);
+                rules) * expansion).round() as int,
+            (expected * expansion) as int);
     }
 
     #[test]
@@ -235,9 +240,14 @@ mod tests {
     }
 
     #[test]
+    fn test_expected_best_value_can_surrender() {
+        let rules = BJRules::new_complex(true);
+        check_best_value_rules(&value::ACE,   &vec![value::TEN, value::SIX], -0.5, &rules);
+    }
+
+    #[test]
     fn test_expected_best_value_infinite1() {
         check_best_value(&value::ACE,    &vec![value::TEN, value::EIGHT]           , -0.100199);
-        check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
     }
 
     #[test]
@@ -254,6 +264,11 @@ mod tests {
     #[test]
     fn test_expected_best_value_infinite4() {
         check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
+    }
+
+    #[test]
+    fn test_expected_best_value_infinite5() {
+        check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
     }
 
     #[bench]
