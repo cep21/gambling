@@ -42,17 +42,17 @@ impl <'a>CardShoeTracker<'a> {
         };
     }
     */
-    pub fn countValue(&self, ref v: Value) -> uint {
+    pub fn count_value(&self, ref v: Value) -> uint {
         let mut ret = 0;
         for &i in self.counts[v.index()].iter() {
             ret += i;
         }
         return ret;
     }
-    pub fn seenCards(&self) -> uint {
+    pub fn seen_cards(&self) -> uint {
         let mut ret = 0;
         for &v in value::VALUES.iter() {
-            ret += self.countValue(v);
+            ret += self.count_value(v);
         }
         return ret;
     }

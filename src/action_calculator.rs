@@ -8,7 +8,6 @@ use bjaction::STAND;
 use bjaction::DOUBLE;
 use bjaction::SURRENDER;
 use bjaction::SPLIT;
-use hand::BJHandImpl;
 use cards::card::Card;
 use cards::value::VALUES;
 use cards::value::ACE;
@@ -64,7 +63,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                       rules: &BJRules) -> Option<f64> {
         return match action {
             HIT => {
-                match rules.canHit(hand) {
+                match rules.can_hit(hand) {
                     false => None,
                     true => {
                         let mut final_result = 0.0;
@@ -78,11 +77,11 @@ impl ActionCalculator for ActionCalculatorImpl {
                                         fail!("Count positive, but couldn't remove!");
                                     }
                                 };
-                                hand.addCard(card_from_deck);
+                                hand.add_card(card_from_deck);
                                 let ev_with_value = self.expected_value_best_action(
                                     hand, dealer_up_card, d, rules);
                                 final_result += odds_of_value * ev_with_value;
-                                hand.removeCard(card_from_deck);
+                                hand.remove_card(card_from_deck);
                                 d.insert(&card_from_deck);
                             }
                         }
@@ -91,24 +90,24 @@ impl ActionCalculator for ActionCalculatorImpl {
                 }
             }
             STAND => {
-                let mut dealer_hand = BJHandImpl::new();
-                dealer_hand.addCard(*dealer_up_card);
+                let mut dealer_hand = BJHand::new();
+                dealer_hand.add_card(*dealer_up_card);
                 self.expected_with_dealer(hand, &mut dealer_hand, d, rules)
             }
             DOUBLE => {
-                match rules.canDouble(hand) {
+                match rules.can_double(hand) {
                     false => None,
                     true => Some(-1.0),
                 }
             }
             SPLIT => {
-                match rules.canSplit(hand) {
+                match rules.can_split(hand) {
                     false => None,
                     true => Some(-1.0),
                 }
             }
             SURRENDER => {
-                match rules.canSurrender(hand) {
+                match rules.can_surrender(hand) {
                     false => None,
                     true => Some(0.5),
                 }
@@ -117,7 +116,7 @@ impl ActionCalculator for ActionCalculatorImpl {
     }
     fn expected_with_dealer(&self, player_hand: &BJHand, dealer_hand: &mut BJHand,
                             d: &mut DirectShoe, rules: &BJRules) -> Option<f64> {
-        if !rules.shouldHitDealerHand(dealer_hand) {
+        if !rules.should_hit_dealer_hand(dealer_hand) {
             let dealer_score = dealer_hand.score();
             let player_score = player_hand.score();
             assert!(player_score <= 21);
@@ -156,7 +155,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                         }
                     };
                     assert_eq!(card_from_deck.value().desc(), v.desc());
-                    dealer_hand.addCard(card_from_deck);
+                    dealer_hand.add_card(card_from_deck);
                     if rules.is_blackjack(dealer_hand) &&
                         !rules.dealer_blackjack_after_hand() {
                             // ignore
@@ -169,7 +168,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                         final_result += odds_of_value * ev_with_value;
                     }
 
-                    dealer_hand.removeCard(card_from_deck);
+                    dealer_hand.remove_card(card_from_deck);
                     d.insert(&card_from_deck);
                 }
             }
@@ -196,8 +195,8 @@ fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f
     let expansion = 1000000.0;
     assert_eq!(
         (get(a.expected_with_dealer(
-            &get(BJHandImpl::new_from_deck(&mut shoe, player_cards)),
-            &mut get(BJHandImpl::new_from_deck(&mut shoe, dealer_cards)),
+            &get(BJHand::new_from_deck(&mut shoe, player_cards)),
+            &mut get(BJHand::new_from_deck(&mut shoe, dealer_cards)),
             &mut shoe,
             &rules)) * expansion).round(),
         expected * expansion);
@@ -213,7 +212,7 @@ fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>, expected:
     let expansion = 1000000.0;
     assert_eq!(
         (a.expected_value_best_action(
-            &mut get(BJHandImpl::new_from_deck(&mut shoe, player_cards)),
+            &mut get(BJHand::new_from_deck(&mut shoe, player_cards)),
             &get(shoe.remove(dealer_up_card)),
             &mut shoe,
             &rules) * expansion).round(),
@@ -244,7 +243,10 @@ fn test_expected_infinite_deck() {
 }
 
 #[bench]
-fn bench_with_calc(_: &mut Bencher) {
+fn bench_with_calc(b: &mut Bencher) {
     use cards::value;
-    check_best_value(&value::TWO,    &vec![value::TEN, value::TWO]             , -0.253390);
+    b.iter(|| {
+//        check_best_value(&value::TWO,    &vec![value::TEN, value::TWO]             , -0.253390)
+        check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
+    });
 }

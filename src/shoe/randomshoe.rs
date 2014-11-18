@@ -79,8 +79,8 @@ struct RandomValuePicker;
 
 impl ValuePicker for RandomValuePicker {
     fn value(&mut self) -> Option<Value> {
-        let valueIndex = rand::random::<uint>() % VALUES.len();
-        Some(VALUES[valueIndex])
+        let value_index = rand::random::<uint>() % VALUES.len();
+        Some(VALUES[value_index])
     }
     fn count(&self, v: &Value) -> uint {
         // Assumes full single deck
@@ -127,7 +127,7 @@ impl RandomItemPicker {
 
     pub fn get_index(&mut self, index_to_find: uint) -> Option<uint> {
         let mut current: uint = 0;
-        // The first time valueIndex <= current, we take the last value
+        // The first time value_index <= current, we take the last value
         let mut index_in_loop = 0;
         while index_in_loop < self.non_zero_index_counts.len() {
             let index = self.non_zero_index_counts[index_in_loop];
@@ -280,25 +280,25 @@ impl SuitPicker for RandomDeckSuitPicker {
 
 
 pub struct GenericDirectShoe<'a> {
-    valuePicker: Box<ValuePicker + 'a>,
-    suitPickers: Box<[Box<SuitPicker + 'a>]>
+    value_picker: Box<ValuePicker + 'a>,
+    suit_pickers: Box<[Box<SuitPicker + 'a>]>
 }
 /*
 impl <'a>GenericDirectShoe<'a> {
-    pub fn new(valuePicker: Box<ValuePicker>, suitPickers: Box<[Box<SuitPicker>]>)
+    pub fn new(value_picker: Box<ValuePicker>, suit_pickers: Box<[Box<SuitPicker>]>)
             -> GenericDirectShoe<'a> {
         return GenericDirectShoe {
-            valuePicker: valuePicker,
-            suitPickers: suitPickers,
+            value_picker: value_picker,
+            suit_pickers: suit_pickers,
         }
     }
 }
 */
 impl <'a>DirectShoe for GenericDirectShoe<'a> {
     fn pop(&mut self) -> Option<Card> {
-        return match self.valuePicker.value() {
+        return match self.value_picker.value() {
             Some(v) => {
-                let ref mut picker = self.suitPickers[v.index()];
+                let ref mut picker = self.suit_pickers[v.index()];
                 match picker.suit() {
                     Some(s) => {
                         Some(Card::new(v, s))
@@ -314,15 +314,15 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
         };
     }
     fn len(&self) -> uint {
-        return self.valuePicker.len();
+        return self.value_picker.len();
     }
     fn count(&self, v: &Value) -> uint {
-        return self.valuePicker.count(v);
+        return self.value_picker.count(v);
     }
     fn remove(&mut self, v: &Value) -> Option<Card> {
-        return match self.valuePicker.remove(v) {
+        return match self.value_picker.remove(v) {
             None => None,
-            Some(val) => match self.suitPickers[v.index()].suit() {
+            Some(val) => match self.suit_pickers[v.index()].suit() {
                 Some(s) => {
                     Some(Card::new(val, s))
                 },
@@ -333,8 +333,8 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
         }
     }
     fn insert(&mut self, v: &Card) {
-        self.valuePicker.insert(v.value());
-        self.suitPickers[v.value().index()].insert(v.suit());
+        self.value_picker.insert(v.value());
+        self.suit_pickers[v.value().index()].insert(v.suit());
     }
 }
 
@@ -345,8 +345,8 @@ pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
         sp.push(box RandomDeckSuitPicker::new(1));
     }
     GenericDirectShoe {
-        valuePicker: box vp,
-        suitPickers: sp.into_boxed_slice(),
+        value_picker: box vp,
+        suit_pickers: sp.into_boxed_slice(),
     }
     //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
 }
@@ -358,8 +358,8 @@ pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
         sp.push(box RandomSuitPicker);
     }
     GenericDirectShoe {
-        valuePicker: box vp,
-        suitPickers: sp.into_boxed_slice(),
+        value_picker: box vp,
+        suit_pickers: sp.into_boxed_slice(),
     }
     //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
 }
