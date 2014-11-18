@@ -10,14 +10,14 @@ impl BJRules {
     pub fn new() -> BJRules {
         BJRules {
             can_surrender: false,
-            split_limit: 0,
+            split_limit: 3,
         }
     }
 
     pub fn new_complex(can_surrender: bool) -> BJRules {
         BJRules {
             can_surrender: can_surrender,
-            split_limit: 0,
+            split_limit: 3,
         }
     }
 

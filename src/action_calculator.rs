@@ -22,7 +22,7 @@ pub trait ActionCalculator {
                       rules: &BJRules) -> Option<f64>;
     fn expected_with_dealer(&self, player_hand: &BJHand,
                             dealer_hand: &mut BJHand, d: &mut DirectShoe,
-                            rules: &BJRules) -> Option<f64>;
+                            rules: &BJRules) -> f64;
     fn expected_value_best_action(&self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64;
@@ -89,9 +89,25 @@ impl ActionCalculator for ActionCalculatorImpl {
             }
             STAND => {
                 // I guess you can always stand
-                let mut dealer_hand = BJHand::new();
-                dealer_hand.add_card(*dealer_up_card);
-                self.expected_with_dealer(hand, &mut dealer_hand, d, rules)
+                // Assume the dealer has already checked for blackjack
+                let this_hands_value = match rules.is_blackjack(hand) {
+                    true => rules.blackjack_payout(),
+                    false => {
+                        let mut dealer_hand = BJHand::new();
+                        dealer_hand.add_card(*dealer_up_card);
+                        self.expected_with_dealer(hand, &mut dealer_hand, d, rules)
+                    }
+                };
+                //   The flow is backwards, but the math works: We resolve the
+                // previous hand, and then try to resolve this hand.  The real
+                // flow of the cards is people pick their own hand, THEN the
+                // dealer deals her own cards.  This logic is more like:
+                // We let the dealer resolve the first split, then pick cards
+                // for the second then let the dealer resolve the second split.
+                match hand.splits_to_solve() > 0 {
+                    false => Some(this_hands_value),
+                    true => Some(-1.0)
+                }
             }
             DOUBLE => {
                 match rules.can_double(hand) {
@@ -161,19 +177,19 @@ impl ActionCalculator for ActionCalculatorImpl {
     }
     fn expected_with_dealer(&self, player_hand: &BJHand,
                             dealer_hand: &mut BJHand, d: &mut DirectShoe,
-                            rules: &BJRules) -> Option<f64> {
+                            rules: &BJRules) -> f64 {
         if !rules.should_hit_dealer_hand(dealer_hand) {
             let dealer_score = dealer_hand.score();
             let player_score = player_hand.score();
             assert!(player_score <= 21);
             if dealer_score > 21 {
-                return Some(1.0);
+                return 1.0;
             } else  if dealer_score > player_score {
-                return Some(-1.0);
+                return -1.0;
             } else if dealer_score < player_score {
-                return Some(1.0);
+                return 1.0;
             } else {
-                return Some(0.0);
+                return 0.0;
             }
         } else {
             // The dealer hits ... takes a random card
@@ -206,11 +222,8 @@ impl ActionCalculator for ActionCalculatorImpl {
                         !rules.dealer_blackjack_after_hand() {
                             // ignore
                     } else {
-                        let ev_with_value = match self.expected_with_dealer(
-                            player_hand, dealer_hand, d, rules) {
-                                Some(c) => c,
-                                None => return None,
-                        };
+                        let ev_with_value = self.expected_with_dealer(
+                            player_hand, dealer_hand, d, rules);
                         final_result += odds_of_value * ev_with_value;
                     }
 
@@ -218,7 +231,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                     d.insert(&card_from_deck);
                 }
             }
-            return Some(final_result);
+            return final_result;
         }
     }
 }
@@ -249,7 +262,7 @@ mod tests {
                 &BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
                 &mut BJHand::new_from_deck(&mut shoe, dealer_cards).unwrap(),
                 &mut shoe,
-                &rules).unwrap() * expansion).round() as int,
+                &rules) * expansion).round() as int,
             (expected * expansion) as int);
     }
 
@@ -297,6 +310,11 @@ mod tests {
     #[test]
     fn test_expected_best_value_11_6() {
         check_best_value(&value::SIX,   &vec![value::FIVE, value::SIX], 0.667380);
+    }
+
+    #[test]
+    fn test_expected_best_value_88_10() {
+        check_best_value(&value::TEN,   &vec![value::EIGHT, value::EIGHT], -0.480686);
     }
 
     #[test]

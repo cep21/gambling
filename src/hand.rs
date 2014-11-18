@@ -14,11 +14,11 @@ pub struct BJHand {
     score: uint,
     ace_count: uint,
     splits_done: uint,
-    splits_to_solve: uint,
     num_cards: uint,
     double_count: uint,
     // The first two cards are very important for blackjack
     cards: Vec<Card>,
+    splits_to_solve: Vec<Card>,
 }
 
 impl fmt::Show for BJHand {
@@ -45,21 +45,20 @@ impl BJHand {
         return self.ace_count > 0 && self.score + 10 <= 21;
     }
 
-    pub fn split(&mut self) -> Card {
+    pub fn split(&mut self) {
         assert_eq!(2, self.cards.len());
         assert_eq!(self.cards[0].value(), self.cards[1].value());
-        let card_to_ret = self.cards[1];
-        self.remove_card(card_to_ret);
-        self.splits_to_solve += 1;
-        card_to_ret
+        self.splits_to_solve.push(self.cards[1]);
+        self.remove_card(self.cards[1]);
     }
 
-    pub fn unsplit(&mut self, c: Card) {
+    pub fn unsplit(&mut self) {
+        assert!(self.splits_to_solve() );
         // Force them to remove the previous cards and put them back in the shoe
+        let c = self.splits_to_solve.pop().unwrap();
         assert_eq!(1, self.cards.len());
         assert_eq!(c.value(), self.cards[0].value());
         self.add_card(c);
-        self.splits_to_solve -= 1;
     }
 
     pub fn double_count(&self) -> uint {
@@ -82,6 +81,10 @@ impl BJHand {
 
     pub fn split_number(&self) -> uint {
         return self.splits_done + self.splits_to_solve;
+    }
+
+    pub fn splits_to_solve(&self) -> uint {
+        self.splits_to_solve
     }
 
     pub fn add_card(&mut self, card: Card) -> &mut BJHand {
