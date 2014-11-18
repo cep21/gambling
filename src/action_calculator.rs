@@ -41,7 +41,7 @@ impl ActionCalculator for ActionCalculatorImpl {
         let mut best_result = match self.expected_value(
                 hand, dealer_up_card, d, STAND, rules) {
             Some(s) => s,
-            None => fail!("You should always be able to stand"),
+            None => panic!("You should always be able to stand"),
         };
         for &a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, a, rules) {
@@ -71,7 +71,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                                 let card_from_deck = match d.remove(&v) {
                                     Some(c) => c,
                                     None => {
-                                        fail!("Count positive, but couldn't remove!");
+                                        panic!("Count positive, but couldn't remove!");
                                     }
                                 };
                                 hand.add_card(card_from_deck);
@@ -148,7 +148,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                     let card_from_deck = match d.remove(&v) {
                         Some(c) => c,
                         None => {
-                            fail!("Count positive, but couldn't remove!");
+                            panic!("Count positive, but couldn't remove!");
                         }
                     };
                     assert_eq!(card_from_deck.value().desc(), v.desc());
@@ -188,7 +188,7 @@ mod tests {
     fn get<T>(i: Option<T>) -> T {
         match i {
             Some(x) => x,
-            None => fail!("Expect value")
+            None => panic!("Expect value")
         }
     }
 

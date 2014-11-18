@@ -35,7 +35,7 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
         }
         assert_eq!(4, ace_suit_tracking_set.len());
         match ds.remove(&ACE) {
-            Some(_) => fail!("Expect none!"),
+            Some(_) => panic!("Expect none!"),
             _ => {}
         }
     }
@@ -53,7 +53,7 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
                 assert_eq!(4, ds.count(&value::FOUR));
             }
             None => {
-                fail!("Should be able to remove a four")
+                panic!("Should be able to remove a four")
             }
         }
     }

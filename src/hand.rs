@@ -78,7 +78,7 @@ impl BJHand {
                 return;
             }
         }
-        fail!("Could not find the card in the hand");
+        panic!("Could not find the card in the hand");
     }
 
     pub fn new() -> BJHand {

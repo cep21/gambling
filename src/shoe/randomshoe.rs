@@ -156,7 +156,7 @@ impl RandomItemPicker {
             let value_count_index_to_consider = match self.get_index(value_index) {
                 Some(c) => c,
                 None => {
-                    fail!("Should never return none.  Logic error!");
+                    panic!("Should never return none.  Logic error!");
                 }
             };
             let ref mut value_to_look = self.indexed_value_counts.get_mut(
@@ -304,7 +304,7 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
                         Some(Card::new(v, s))
                     },
                     None =>  {
-                        fail!("Suit should never be empty for a value {}!", v.desc())
+                        panic!("Suit should never be empty for a value {}!", v.desc())
                     }
                 }
             },
@@ -327,7 +327,7 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
                     Some(Card::new(val, s))
                 },
                 None => {
-                    fail!("Suit should never be empty for a value {}!", v.desc())
+                    panic!("Suit should never be empty for a value {}!", v.desc())
                 }
             }
         }
@@ -379,7 +379,7 @@ fn test_cycle_suit_picker() {
     for _ in range(0, 4u) {
         match s.suit() {
             Some(i) => {set.insert(i.index());()}
-            None => fail!("Should not fail!"),
+            None => panic!("Should not panic!"),
         }
     }
     assert_eq!(4, s.len());
