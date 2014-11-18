@@ -87,6 +87,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                 }
             }
             STAND => {
+                // I guess you can always stand
                 let mut dealer_hand = BJHand::new();
                 dealer_hand.add_card(*dealer_up_card);
                 self.expected_with_dealer(hand, &mut dealer_hand, d, rules)
@@ -271,6 +272,11 @@ mod tests {
     #[test]
     fn test_expected_best_value_11_6() {
         check_best_value(&value::SIX,   &vec![value::FIVE, value::SIX], 0.667380);
+    }
+
+    #[test]
+    fn test_expected_best_value_s18_9() {
+        check_best_value(&value::NINE,   &vec![value::ACE, value::SEVEN], -0.100744);
     }
 
     #[test]
