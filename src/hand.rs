@@ -2,6 +2,7 @@ use cards::value;
 use cards::value::Value;
 use cards::card::Card;
 use std::fmt;
+use shoe::shoe::DirectShoe;
 
 pub const INDEX_TO_SCORE: [uint, ..13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 pub fn scoreForValue(v: &Value) -> uint {
@@ -93,6 +94,23 @@ impl <'a>BJHandImpl<'a> {
             numCards: 0,
             cards: Vec::new(),
         }
+    }
+    pub fn new_with_cards(cards: &Vec<Card>) -> BJHandImpl<'a> {
+        let mut h = BJHandImpl::new();
+        for &c in cards.iter() {
+            h.addCard(c);
+        }
+        return h;
+    }
+    pub fn new_from_deck(deck: &mut DirectShoe, values: &Vec<Value>) -> Option<BJHandImpl<'a>> {
+        let mut h = BJHandImpl::new();
+        for &v in values.iter() {
+            match deck.remove(&v) {
+                Some(c) => h.addCard(c),
+                None => return None
+            }
+        }
+        return Some(h);
     }
 }
 
