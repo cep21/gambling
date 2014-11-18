@@ -45,6 +45,15 @@ impl BJHand {
         return self.ace_count > 0 && self.score + 10 <= 21;
     }
 
+    pub fn split(&self) -> BJHand {
+        assert_eq!(2, self.cards.len());
+        assert_eq!(self.cards[0], self.cards[1]);
+        return BJHand::new_split_hand(
+            self.cards[0],
+            self.splits_done + 1,
+            self.splits_to_solve + 1);
+    }
+
     pub fn double_count(&self) -> uint {
         self.double_count
     }
@@ -67,13 +76,14 @@ impl BJHand {
         return self.splits_done + self.splits_to_solve;
     }
 
-    pub fn add_card(&mut self, card: Card) {
+    pub fn add_card(&mut self, card: Card) -> &mut BJHand {
         self.score += score_for_value(card.value());
         self.num_cards += 1;
         if card.value().index() == value::ACE.index() {
             self.ace_count += 1;
         }
         self.cards.push(card);
+        self
     }
 
     pub fn remove_card(&mut self, card: Card) {
@@ -95,6 +105,20 @@ impl BJHand {
         panic!("Could not find the card in the hand");
     }
 
+    pub fn new_split_hand(card: Card, splits_done: uint, splits_to_solve: uint) -> BJHand {
+        let mut h = BJHand {
+            score: 0,
+            ace_count: 0,
+            splits_done: splits_done,
+            splits_to_solve: splits_to_solve,
+            num_cards: 0,
+            double_count: 0,
+            cards: Vec::new(),
+        };
+        h.add_card(card);
+        h
+    }
+
     pub fn new() -> BJHand {
         return BJHand{
             score: 0,
@@ -106,6 +130,7 @@ impl BJHand {
             cards: Vec::new(),
         }
     }
+
     pub fn new_with_cards(cards: &Vec<Card>) -> BJHand {
         let mut h = BJHand::new();
         for &c in cards.iter() {
@@ -113,11 +138,14 @@ impl BJHand {
         }
         return h;
     }
+
     pub fn new_from_deck(deck: &mut DirectShoe, values: &Vec<Value>) -> Option<BJHand> {
         let mut h = BJHand::new();
         for &v in values.iter() {
             match deck.remove(&v) {
-                Some(c) => h.add_card(c),
+                Some(c) => {
+                    h.add_card(c);
+                }
                 None => return None
             }
         }
