@@ -45,13 +45,21 @@ impl BJHand {
         return self.ace_count > 0 && self.score + 10 <= 21;
     }
 
-    pub fn split(&self) -> BJHand {
+    pub fn split(&mut self) -> Card {
         assert_eq!(2, self.cards.len());
-        assert_eq!(self.cards[0], self.cards[1]);
-        return BJHand::new_split_hand(
-            self.cards[0],
-            self.splits_done + 1,
-            self.splits_to_solve + 1);
+        assert_eq!(self.cards[0].value(), self.cards[1].value());
+        let card_to_ret = self.cards[1];
+        self.remove_card(card_to_ret);
+        self.splits_to_solve += 1;
+        card_to_ret
+    }
+
+    pub fn unsplit(&mut self, c: Card) {
+        // Force them to remove the previous cards and put them back in the shoe
+        assert_eq!(1, self.cards.len());
+        assert_eq!(c.value(), self.cards[0].value());
+        self.add_card(c);
+        self.splits_to_solve -= 1;
     }
 
     pub fn double_count(&self) -> uint {
@@ -95,7 +103,8 @@ impl BJHand {
             assert!(self.ace_count >= 1);
             self.ace_count -= 1;
         }
-        for i in range(0, self.cards.len()) {
+        // We assume it's most likely you'll remove a card at the end
+        for i in range(0, self.cards.len()).rev() {
             let c = self.cards[i];
             if c.suit().index() == card.suit().index() && c.value().index() == card.value().index() {
                 self.cards.swap_remove(i);

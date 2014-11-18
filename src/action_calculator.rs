@@ -38,12 +38,12 @@ impl ActionCalculator for ActionCalculatorImpl {
             // Bust... loose bet
             return -1.0;
         }
-        let actions = vec![HIT, DOUBLE, SPLIT, SURRENDER];
         let mut best_result = match self.expected_value(
                 hand, dealer_up_card, d, STAND, rules) {
             Some(s) => s,
             None => panic!("You should always be able to stand"),
         };
+        let actions = [HIT, DOUBLE, SPLIT, SURRENDER];
         for &a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, a, rules) {
                 Some(r) => {
@@ -125,7 +125,30 @@ impl ActionCalculator for ActionCalculatorImpl {
             SPLIT => {
                 match rules.can_split(hand) {
                     false => None,
-                    true => Some(-1.0),
+                    true => {
+                        let card_in_next_hand = hand.split();
+                        let mut final_result = 0.0;
+                        for &v in VALUES.iter() {
+                            let count_of_val = d.count(&v);
+                            if count_of_val > 0 {
+                                let odds_of_value = count_of_val as f64 / d.len() as f64;
+                                let card_from_deck = match d.remove(&v) {
+                                    Some(c) => c,
+                                    None => {
+                                        panic!("Count positive, but couldn't remove!");
+                                    }
+                                };
+                                hand.add_card(card_from_deck);
+                                let ev_with_value = self.expected_value_best_action(
+                                    hand, dealer_up_card, d, rules);
+                                final_result += odds_of_value * ev_with_value;
+                                hand.remove_card(card_from_deck);
+                                d.insert(&card_from_deck);
+                            }
+                        }
+                        hand.unsplit(card_in_next_hand);
+                        Some(final_result)
+                    }
                 }
             }
             SURRENDER => {
