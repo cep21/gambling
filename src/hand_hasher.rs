@@ -1,6 +1,10 @@
+extern crate num;
 use rules::BJRules;
 use hand::BJHand;
 use std::collections::Bitv;
+use self::num::bigint::BigUint;
+use self::num::Zero;
+use self::num::bigint::ToBigUint;
 
 pub trait HandHasher {
     fn hash_hand(rules: &BJRules, hand: &BJHand) -> Vec<u8>;
@@ -16,7 +20,8 @@ struct HashRange {
 }
 
 impl HashRange {
-    fn new(max_value: uint, current_value: uint) -> HashRange {
+    pub fn new(max_value: uint, current_value: uint) -> HashRange {
+        assert!(max_value >= current_value);
         HashRange {
             max_value: max_value,
             current_value: current_value,
@@ -25,30 +30,19 @@ impl HashRange {
 }
 
 fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
-    let mut total_bits_required = 0u;
+    let mut val: BigUint = Zero::zero();
+    let mut bits_required: BigUint = Zero::zero();
     for &i in ranges.iter() {
-        let mut m = i.max_value;
-        while m > 0 {
-            total_bits_required += 1;
-            m /= 2;
-        }
+        val = val * i.max_value.to_biguint().unwrap();
+        val = val + i.current_value.to_biguint().unwrap();
+        bits_required = bits_required * i.max_value.to_biguint().unwrap();
     }
-    let mut bv = Bitv::with_capacity(total_bits_required, false);
-    let mut current_index = 0u;
-    for &i in ranges.iter() {
-        let mut m = i.max_value;
-        let mut v = i.current_value;
-        assert!(v <= m);
-        while m > 0 {
-            if v % 2 == 0 {
-                bv.set(current_index, false);
-            } else {
-                bv.set(current_index, true);
-            }
-            current_index += 1;
-            m /= 2;
-            v /= 2;
-        }
+    let mut bv = Bitv::with_capacity(bits_required.bits(), false);
+    let mut current_bit = 0u;
+    while val > 0u.to_biguint().unwrap() {
+        bv.set(current_bit, val % 2u.to_biguint().unwrap() == 1u.to_biguint().unwrap());
+        current_bit += 1;
+        val = val / 2u.to_biguint().unwrap();
     }
     return bv.to_bytes();
 }
@@ -105,5 +99,18 @@ impl HandHasher for PlayerHandHasher {
             hash += 22;
         }
         vec![hash]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    extern crate test;
+    use hand_hasher::create_hash;
+    use hand_hasher::HashRange;
+    #[test]
+    fn test_create_hash() {
+        let v : Vec<u8> = vec![3];
+        let m : &[HashRange] = [HashRange::new(2, 1)];
+        assert_eq!(v, create_hash(m));
     }
 }

@@ -292,6 +292,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // while slow
     fn test_expected_best_value_11_6() {
         check_best_value(&value::SIX,   &vec![value::FIVE, value::SIX], 0.667380);
     }
@@ -303,17 +304,20 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // while slow
     fn test_expected_best_value_s18_9() {
         check_best_value(&value::NINE,   &vec![value::ACE, value::SEVEN], -0.100744);
     }
 
     #[test]
+    #[ignore] // while slow
     fn test_expected_best_value_9_2() {
         // HIT
         check_best_value(&value::TWO,   &vec![value::FIVE, value::FOUR], 0.074446);
     }
 
     #[test]
+    #[ignore] // while slow
     fn test_expected_best_value_9_3() {
         // DOUBLE
         check_best_value(&value::THREE,   &vec![value::FIVE, value::FOUR], 0.120816);
