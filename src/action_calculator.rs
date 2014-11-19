@@ -57,7 +57,8 @@ impl ActionCalculator {
                 for &v in VALUES.iter() {
                     let count_of_val = d.count(&v);
                     if count_of_val > 0 {
-                        let odds_of_value = count_of_val as f64 / d.len() as f64;
+                        let odds_of_value =
+                            count_of_val as f64 / d.len() as f64;
                         let card_from_deck = match d.remove(&v) {
                             Some(c) => c,
                             None => {
@@ -116,7 +117,8 @@ impl ActionCalculator {
                 for &v in VALUES.iter() {
                     let count_of_val = d.count(&v);
                     if count_of_val > 0 {
-                        let odds_of_value = count_of_val as f64 / d.len() as f64;
+                        let odds_of_value =
+                            count_of_val as f64 / d.len() as f64;
                         let card_from_deck = match d.remove(&v) {
                             Some(c) => c,
                             None => {
@@ -125,8 +127,9 @@ impl ActionCalculator {
                         };
                         hand.add_card(card_from_deck);
                         hand.add_double_count();
-                        let ev_with_value = 2.0 * self.expected_value_best_action(
-                            hand, dealer_up_card, d, rules);
+                        let ev_with_value =
+                            2.0 * self.expected_value_best_action(
+                                hand, dealer_up_card, d, rules);
                         final_result += odds_of_value * ev_with_value;
                         hand.remove_card(card_from_deck);
                         hand.subtract_double_count();
