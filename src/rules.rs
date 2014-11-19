@@ -8,21 +8,22 @@ pub struct BJRules{
 
 impl BJRules {
     pub fn new() -> BJRules {
-        BJRules {
-            can_surrender: false,
-            split_limit: 3,
-        }
+        BJRules::new_complex(false, 1)
     }
 
-    pub fn new_complex(can_surrender: bool) -> BJRules {
+    pub fn new_complex(can_surrender: bool, split_limit: uint) -> BJRules {
         BJRules {
             can_surrender: can_surrender,
-            split_limit: 3,
+            split_limit: split_limit,
         }
     }
 
     pub fn can_double(&self, h: &BJHand) -> bool {
-        return h.len() == 2;
+        h.len() == 2 && h.score() < 22
+    }
+
+    pub fn can_stand(&self, h: &BJHand) -> bool {
+        h.len() > 1
     }
 
     pub fn can_split(&self, h: &BJHand) -> bool {
@@ -68,3 +69,36 @@ impl fmt::Show for BJRules {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    extern crate test;
+    use rules::BJRules;
+    use hand::BJHand;
+    use cards::value;
+    use cards::value::TEN;
+    use shoe::randomshoe::new_infinite_shoe;
+
+    #[test]
+    fn test_rules_after_split() {
+        let rules = BJRules::new_complex(true, 1);
+        let mut shoe = new_infinite_shoe();
+        let mut hand = BJHand::new_from_deck(
+            &mut shoe, &vec![value::TEN, value::TEN]).unwrap();
+        assert!(rules.can_hit(&hand));
+        assert!(rules.can_double(&hand));
+        assert!(rules.can_stand(&hand));
+        assert!(rules.can_surrender(&hand));
+
+        hand.split();
+        assert!(rules.can_hit(&hand));
+        assert!(!rules.can_double(&hand));
+        assert!(!rules.can_surrender(&hand));
+        assert!(!rules.can_stand(&hand));
+
+        hand.unsplit();
+        assert!(rules.can_hit(&hand));
+        assert!(rules.can_double(&hand));
+        assert!(rules.can_stand(&hand));
+        assert!(rules.can_surrender(&hand));
+    }
+}

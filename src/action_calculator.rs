@@ -34,27 +34,26 @@ impl ActionCalculator for ActionCalculatorImpl {
     fn expected_value_best_action(&self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
-        if hand.score() > 21 {
-            // Bust... loose bet
-            return -1.0;
-        }
-        let mut best_result = match self.expected_value(
-                hand, dealer_up_card, d, STAND, rules) {
-            Some(s) => s,
-            None => panic!("You should always be able to stand"),
-        };
-        let actions = [HIT, DOUBLE, SPLIT, SURRENDER];
+        let mut best_result: Option<f64>  = None;
+        let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
         for &a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, a, rules) {
                 Some(r) => {
-                    if best_result < r {
-                        best_result = r;
+                    match best_result {
+                        Some(b) => {
+                            if b < r {
+                                best_result = Some(r)
+                            }
+                        }
+                        None => {
+                            best_result = Some(r)
+                        }
                     }
                 }
                 _ => {}
             }
         }
-        return best_result;
+        return best_result.unwrap();
     }
     fn expected_value(&self, hand: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
@@ -68,16 +67,18 @@ impl ActionCalculator for ActionCalculatorImpl {
                         for &v in VALUES.iter() {
                             let count_of_val = d.count(&v);
                             if count_of_val > 0 {
-                                let odds_of_value = count_of_val as f64 / d.len() as f64;
+                                let odds_of_value =
+                                    count_of_val as f64 / d.len() as f64;
                                 let card_from_deck = match d.remove(&v) {
                                     Some(c) => c,
                                     None => {
-                                        panic!("Count positive, but couldn't remove!");
+                                        panic!("Item should exist!");
                                     }
                                 };
                                 hand.add_card(card_from_deck);
-                                let ev_with_value = self.expected_value_best_action(
-                                    hand, dealer_up_card, d, rules);
+                                let ev_with_value =
+                                    self.expected_value_best_action(
+                                        hand,dealer_up_card, d, rules);
                                 final_result += odds_of_value * ev_with_value;
                                 hand.remove_card(card_from_deck);
                                 d.insert(&card_from_deck);
@@ -88,14 +89,25 @@ impl ActionCalculator for ActionCalculatorImpl {
                 }
             }
             STAND => {
-                // I guess you can always stand
-                // Assume the dealer has already checked for blackjack
+                //  You can't stand if, for example, you've split and still need
+                //  that second card
+                if !rules.can_stand(hand) {
+                    return None;
+                }
                 let this_hands_value = match rules.is_blackjack(hand) {
-                    true => rules.blackjack_payout(),
+                    true => {
+                        rules.blackjack_payout()
+                    }
                     false => {
-                        let mut dealer_hand = BJHand::new();
-                        dealer_hand.add_card(*dealer_up_card);
-                        self.expected_with_dealer(hand, &mut dealer_hand, d, rules)
+                        if hand.score() > 21 {
+                            -1.0
+                        } else {
+                            let mut dealer_hand = BJHand::new();
+                            dealer_hand.add_card(*dealer_up_card);
+                            self.expected_with_dealer(hand,
+                                                      &mut dealer_hand,
+                                                      d, rules)
+                        }
                     }
                 };
                 //   The flow is backwards, but the math works: We resolve the
@@ -107,7 +119,12 @@ impl ActionCalculator for ActionCalculatorImpl {
                 match hand.splits_to_solve() > 0 {
                     false => Some(this_hands_value),
                     true => {
-                        Some(-1.0)
+                        // Taking over 'hand' variable
+                        let mut hand =
+                            hand.create_next_split_hand();
+                        Some(this_hands_value +
+                             self.expected_value_best_action(
+                                 &mut hand, dealer_up_card, d, rules))
                     }
                 }
             }
@@ -119,17 +136,19 @@ impl ActionCalculator for ActionCalculatorImpl {
                         for &v in VALUES.iter() {
                             let count_of_val = d.count(&v);
                             if count_of_val > 0 {
-                                let odds_of_value = count_of_val as f64 / d.len() as f64;
+                                let odds_of_value =
+                                    count_of_val as f64 / d.len() as f64;
                                 let card_from_deck = match d.remove(&v) {
                                     Some(c) => c,
                                     None => {
-                                        panic!("Count positive, but couldn't remove!");
+                                        panic!("Expect a value!");
                                     }
                                 };
                                 hand.add_card(card_from_deck);
                                 hand.add_double_count();
-                                let ev_with_value = 2.0 * self.expected_value_best_action(
-                                    hand, dealer_up_card, d, rules);
+                                let ev_with_value =
+                                    2.0 * self.expected_value_best_action(
+                                        hand, dealer_up_card, d, rules);
                                 final_result += odds_of_value * ev_with_value;
                                 hand.remove_card(card_from_deck);
                                 hand.subtract_double_count();
@@ -145,25 +164,10 @@ impl ActionCalculator for ActionCalculatorImpl {
                     false => None,
                     true => {
                         hand.split();
-                        let mut final_result = 0.0;
-                        for &v in VALUES.iter() {
-                            let count_of_val = d.count(&v);
-                            if count_of_val > 0 {
-                                let odds_of_value = count_of_val as f64 / d.len() as f64;
-                                let card_from_deck = match d.remove(&v) {
-                                    Some(c) => c,
-                                    None => {
-                                        panic!("Count positive, but couldn't remove!");
-                                    }
-                                };
-                                hand.add_card(card_from_deck);
-                                let ev_with_value = self.expected_value_best_action(
-                                    hand, dealer_up_card, d, rules);
-                                final_result += odds_of_value * ev_with_value;
-                                hand.remove_card(card_from_deck);
-                                d.insert(&card_from_deck);
-                            }
-                        }
+                        // Split the hand, you'll get a hit here (since hit is
+                        // the only option).
+                        let final_result = self.expected_value_best_action(
+                                hand, dealer_up_card, d, rules);
                         hand.unsplit();
                         Some(final_result)
                     }
@@ -197,8 +201,9 @@ impl ActionCalculator for ActionCalculatorImpl {
             // The dealer hits ... takes a random card
             let mut final_result = 0.0;
             let number_of_valid_cards = {
-                if rules.dealer_blackjack_after_hand() || dealer_hand.len() != 1 {
-                    d.len()
+                if rules.dealer_blackjack_after_hand() ||
+                    dealer_hand.len() != 1 {
+                        d.len()
                 } else {
                     match dealer_hand.score() {
                         10 => d.len() - d.count(&ACE),
@@ -211,7 +216,9 @@ impl ActionCalculator for ActionCalculatorImpl {
             for &v in VALUES.iter() {
                 let count_of_val = d.count(&v);
                 if count_of_val > 0 {
-                    let odds_of_value = count_of_val as f64 / number_of_valid_cards as f64;
+                    let odds_of_value =
+                        count_of_val as f64 /
+                        number_of_valid_cards as f64;
                     let card_from_deck = match d.remove(&v) {
                         Some(c) => c,
                         None => {
@@ -252,7 +259,8 @@ mod tests {
     use cards::value;
     use rules::BJRules;
 
-    fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>, expected: f64) {
+    fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
+                   expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
         use rules::BJRules;
         let a = ActionCalculatorImpl;
@@ -268,13 +276,14 @@ mod tests {
             (expected * expansion) as int);
     }
 
-    fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>, expected: f64) {
+    fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>,
+                        expected: f64) {
         let rules = BJRules::new();
         check_best_value_rules(dealer_up_card, player_cards, expected, &rules);
     }
 
-    fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>, expected: f64,
-                             rules: &BJRules) {
+    fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>,
+                              expected: f64, rules: &BJRules) {
         use shoe::randomshoe::new_infinite_shoe;
         let a = ActionCalculatorImpl;
         let mut shoe = new_infinite_shoe();
@@ -305,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_expected_best_value_surr_16_a() {
-        let rules = BJRules::new_complex(true);
+        let rules = BJRules::new_complex(true, 1);
         check_best_value_rules(&value::ACE,   &vec![value::TEN, value::SIX], -0.5, &rules);
     }
 

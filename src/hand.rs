@@ -27,7 +27,6 @@ impl fmt::Show for BJHand {
     }
 }
 
-
 impl BJHand {
     pub fn cards(&self) -> &Vec<Card> {
         &self.cards
@@ -60,6 +59,20 @@ impl BJHand {
         assert_eq!(1, self.cards.len());
         assert_eq!(c.value(), self.cards[0].value());
         self.add_card(c);
+    }
+
+    pub fn create_next_split_hand(&self) -> BJHand {
+        assert!(self.splits_to_solve.len() > 0);
+        let mut ret = BJHand::new();
+        ret.splits_done = self.splits_done + 1;
+        // TODO: This could be more efficient.  push_all not working right,
+        //       and can add one at a time.  Also, can I use a ref here?
+        for &i in self.splits_to_solve.iter() {
+            ret.splits_to_solve.push(i);
+        }
+        let card_to_add = ret.splits_to_solve.pop().unwrap();
+        ret.add_card(card_to_add);
+        ret
     }
 
     pub fn double_count(&self) -> uint {
