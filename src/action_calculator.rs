@@ -16,22 +16,10 @@ use rules::BJRules;
 use shoe::shoe::DirectShoe;
 use shoe::randomshoe::SuitPicker;
 
-pub trait ActionCalculator {
-    fn expected_value(&self, h: &mut BJHand, dealer_up_card: &Card,
-                      d: &mut DirectShoe, action: BJAction,
-                      rules: &BJRules) -> Option<f64>;
-    fn expected_with_dealer(&self, player_hand: &BJHand,
-                            dealer_hand: &mut BJHand, d: &mut DirectShoe,
-                            rules: &BJRules) -> f64;
-    fn expected_value_best_action(&self, hand: &mut BJHand,
-                                  dealer_up_card: &Card, d: &mut DirectShoe,
-                                  rules: &BJRules) -> f64;
-}
+pub struct ActionCalculator;
 
-pub struct ActionCalculatorImpl;
-
-impl ActionCalculator for ActionCalculatorImpl {
-    fn expected_value_best_action(&self, hand: &mut BJHand,
+impl ActionCalculator {
+    pub fn expected_value_best_action(&self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
         let mut best_result: Option<f64>  = None;
@@ -55,45 +43,40 @@ impl ActionCalculator for ActionCalculatorImpl {
         }
         return best_result.unwrap();
     }
-    fn expected_value(&self, hand: &mut BJHand, dealer_up_card: &Card,
+
+    pub fn expected_value(&self, hand: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
+        if !rules.can_take_action(hand, action) {
+            return None;
+        }
         return match action {
             HIT => {
-                match rules.can_hit(hand) {
-                    false => None,
-                    true => {
-                        let mut final_result = 0.0;
-                        for &v in VALUES.iter() {
-                            let count_of_val = d.count(&v);
-                            if count_of_val > 0 {
-                                let odds_of_value =
-                                    count_of_val as f64 / d.len() as f64;
-                                let card_from_deck = match d.remove(&v) {
-                                    Some(c) => c,
-                                    None => {
-                                        panic!("Item should exist!");
-                                    }
-                                };
-                                hand.add_card(card_from_deck);
-                                let ev_with_value =
-                                    self.expected_value_best_action(
-                                        hand,dealer_up_card, d, rules);
-                                final_result += odds_of_value * ev_with_value;
-                                hand.remove_card(card_from_deck);
-                                d.insert(&card_from_deck);
+                assert!(rules.can_hit(hand));
+                let mut final_result = 0.0;
+                for &v in VALUES.iter() {
+                    let count_of_val = d.count(&v);
+                    if count_of_val > 0 {
+                        let odds_of_value = count_of_val as f64 / d.len() as f64;
+                        let card_from_deck = match d.remove(&v) {
+                            Some(c) => c,
+                            None => {
+                                panic!("Item should exist!");
                             }
-                        }
-                        Some(final_result)
+                        };
+                        hand.add_card(card_from_deck);
+                        let ev_with_value =
+                            self.expected_value_best_action(
+                                hand,dealer_up_card, d, rules);
+                        final_result += odds_of_value * ev_with_value;
+                        hand.remove_card(card_from_deck);
+                        d.insert(&card_from_deck);
                     }
                 }
+                Some(final_result)
             }
             STAND => {
-                //  You can't stand if, for example, you've split and still need
-                //  that second card
-                if !rules.can_stand(hand) {
-                    return None;
-                }
+                assert!(rules.can_stand(hand));
                 let this_hands_value = match rules.is_blackjack(hand) {
                     true => {
                         rules.blackjack_payout()
@@ -120,8 +103,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                     false => Some(this_hands_value),
                     true => {
                         // Taking over 'hand' variable
-                        let mut hand =
-                            hand.create_next_split_hand();
+                        let mut hand = hand.create_next_split_hand();
                         Some(this_hands_value +
                              self.expected_value_best_action(
                                  &mut hand, dealer_up_card, d, rules))
@@ -129,59 +111,48 @@ impl ActionCalculator for ActionCalculatorImpl {
                 }
             }
             DOUBLE => {
-                match rules.can_double(hand) {
-                    false => None,
-                    true => {
-                        let mut final_result = 0.0;
-                        for &v in VALUES.iter() {
-                            let count_of_val = d.count(&v);
-                            if count_of_val > 0 {
-                                let odds_of_value =
-                                    count_of_val as f64 / d.len() as f64;
-                                let card_from_deck = match d.remove(&v) {
-                                    Some(c) => c,
-                                    None => {
-                                        panic!("Expect a value!");
-                                    }
-                                };
-                                hand.add_card(card_from_deck);
-                                hand.add_double_count();
-                                let ev_with_value =
-                                    2.0 * self.expected_value_best_action(
-                                        hand, dealer_up_card, d, rules);
-                                final_result += odds_of_value * ev_with_value;
-                                hand.remove_card(card_from_deck);
-                                hand.subtract_double_count();
-                                d.insert(&card_from_deck);
+                assert!(rules.can_double(hand));
+                let mut final_result = 0.0;
+                for &v in VALUES.iter() {
+                    let count_of_val = d.count(&v);
+                    if count_of_val > 0 {
+                        let odds_of_value = count_of_val as f64 / d.len() as f64;
+                        let card_from_deck = match d.remove(&v) {
+                            Some(c) => c,
+                            None => {
+                                panic!("Expect a value!");
                             }
-                        }
-                        Some(final_result)
+                        };
+                        hand.add_card(card_from_deck);
+                        hand.add_double_count();
+                        let ev_with_value = 2.0 * self.expected_value_best_action(
+                            hand, dealer_up_card, d, rules);
+                        final_result += odds_of_value * ev_with_value;
+                        hand.remove_card(card_from_deck);
+                        hand.subtract_double_count();
+                        d.insert(&card_from_deck);
                     }
                 }
+                Some(final_result)
             }
             SPLIT => {
-                match rules.can_split(hand) {
-                    false => None,
-                    true => {
-                        hand.split();
-                        // Split the hand, you'll get a hit here (since hit is
-                        // the only option).
-                        let final_result = self.expected_value_best_action(
-                                hand, dealer_up_card, d, rules);
-                        hand.unsplit();
-                        Some(final_result)
-                    }
-                }
+                assert!(rules.can_split(hand));
+                hand.split();
+                // Split the hand, you'll get a hit here (since hit is
+                // the only option).
+                let final_result = self.expected_value_best_action(
+                        hand, dealer_up_card, d, rules);
+                hand.unsplit();
+                Some(final_result)
             }
             SURRENDER => {
-                match rules.can_surrender(hand) {
-                    false => None,
-                    true => Some(-0.5),
-                }
+                assert!(rules.can_surrender(hand));
+                Some(-0.5)
             }
         }
     }
-    fn expected_with_dealer(&self, player_hand: &BJHand,
+
+    pub fn expected_with_dealer(&self, player_hand: &BJHand,
                             dealer_hand: &mut BJHand, d: &mut DirectShoe,
                             rules: &BJRules) -> f64 {
         if !rules.should_hit_dealer_hand(dealer_hand) {
@@ -249,7 +220,6 @@ impl ActionCalculator for ActionCalculatorImpl {
 #[cfg(test)]
 mod tests {
     extern crate test;
-    use action_calculator::ActionCalculatorImpl;
     use action_calculator::ActionCalculator;
     use self::test::Bencher;
     use cards::value::Value;
@@ -263,7 +233,7 @@ mod tests {
                    expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
         use rules::BJRules;
-        let a = ActionCalculatorImpl;
+        let a = ActionCalculator;
         let rules = BJRules::new();
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
@@ -285,7 +255,7 @@ mod tests {
     fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>,
                               expected: f64, rules: &BJRules) {
         use shoe::randomshoe::new_infinite_shoe;
-        let a = ActionCalculatorImpl;
+        let a = ActionCalculator;
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
         assert_eq!(

@@ -1,5 +1,11 @@
 use hand::BJHand;
 use std::fmt;
+use bjaction::BJAction;
+use bjaction::BJAction::HIT;
+use bjaction::BJAction::STAND;
+use bjaction::BJAction::DOUBLE;
+use bjaction::BJAction::SURRENDER;
+use bjaction::BJAction::SPLIT;
 
 pub struct BJRules{
     can_surrender: bool,
@@ -20,6 +26,16 @@ impl BJRules {
 
     pub fn can_double(&self, h: &BJHand) -> bool {
         h.len() == 2 && h.score() < 22
+    }
+
+    pub fn can_take_action(&self, h: &BJHand, action: BJAction) -> bool {
+        match action {
+            HIT => self.can_hit(h),
+            STAND => self.can_stand(h),
+            DOUBLE => self.can_double(h),
+            SPLIT => self.can_split(h),
+            SURRENDER => self.can_surrender(h),
+        }
     }
 
     pub fn can_stand(&self, h: &BJHand) -> bool {
