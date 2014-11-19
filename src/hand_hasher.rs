@@ -77,19 +77,21 @@ impl HandHasher for DealerHandHasher {
 pub struct PlayerHandHasher;
 
 impl HandHasher for PlayerHandHasher {
-    fn hash_hand(&self, _: &BJRules, hand: &BJHand) -> Vec<u8> {
+    fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
         assert!(hand.len() >= 1);
         let mut score = hand.score();
         // All scores > 22 are the same to us
         if score > 22 {
             score = 22;
         }
-        let is_soft = hand.is_soft();
+        let is_soft = HashRange::new(2, match hand.is_soft() {
+            true => 1,
+            false => 0,
+        });
 
         // TODO: Include rules.automatic_win_at_hand_length()
         // Number of cards in the hand only matter if it's 1, 2, or 3+
-        /*
-        let cards_in_hand_hash = {
+        let cards_in_hand_hash = HashRange::new(3, {
             if hand.len() == 1 {
                 0u
             } else if hand.len() == 2 {
@@ -97,15 +99,28 @@ impl HandHasher for PlayerHandHasher {
             } else {
                 2u
             }
-        };
-*/
-        // Hash together the score and softness
-        assert!(score <= 22);
-        let mut hash: u8 = score as u8;
-        if is_soft {
-            hash += 22;
-        }
-        vec![hash]
+        });
+        let double_count = HashRange::new(
+            rules.max_doubles_single_hand() + 1,
+            hand.double_count());
+
+        let splits_done = HashRange::new(
+            rules.split_limit() + 1,
+            hand.splits_done());
+
+        let splits_to_do = HashRange::new(
+            rules.split_limit() + 1,
+            hand.splits_to_solve());
+
+        create_hash([
+                    HashRange::new(23, score),
+                    is_soft,
+                    splits_done,
+                    cards_in_hand_hash,
+                    double_count,
+                    splits_to_do,
+                    ])
+
     }
 }
 
@@ -120,6 +135,7 @@ mod tests {
     use hand_hasher::HandHasher;
     use hand::BJHand;
     use cards::value;
+    use cards::value::Value;
 
     #[test]
     fn test_create_hash() {
@@ -172,68 +188,74 @@ mod tests {
                         ]));
     }
 
+
+    fn ensure_equal_values(hasher: &HandHasher, rules: BJRules, h1: Vec<Value>, h2: Vec<Value>) {
+        let mut shoe = new_infinite_shoe();
+
+        assert_eq!(
+            hasher.hash_hand(&rules,
+                             &BJHand::new_from_deck(&mut shoe, &h1).unwrap()),
+            hasher.hash_hand(&rules,
+                             &BJHand::new_from_deck(&mut shoe, &h2).unwrap()));
+    }
+
+    fn ensure_not_equal_values(hasher: &HandHasher, rules: BJRules, h1: Vec<Value>, h2: Vec<Value>) {
+        let mut shoe = new_infinite_shoe();
+
+        assert!(
+            hasher.hash_hand(&rules,
+                             &BJHand::new_from_deck(&mut shoe, &h1).unwrap()) !=
+            hasher.hash_hand(&rules,
+                             &BJHand::new_from_deck(&mut shoe, &h2).unwrap()));
+    }
+
     #[test]
     fn test_dealer_hash() {
         let mut rules = BJRules::new();
-        let mut shoe = new_infinite_shoe();
-        let hasher = DealerHandHasher;
+        let hasher = &DealerHandHasher;
 
-        assert_eq!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::SIX]).unwrap()),
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::EIGHT, value::EIGHT]).unwrap()));
+        ensure_equal_values(
+            hasher,
+            rules,
+            vec![value::TEN, value::SIX],
+            vec![value::EIGHT, value::EIGHT]);
+        ensure_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::SEVEN],
+            vec![value::TEN, value::EIGHT]);
+        ensure_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::SIX],
+            vec![value::TEN, value::SEVEN]);
+        ensure_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::SIX],
+            vec![value::TEN, value::SEVEN]);
+        ensure_not_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::SEVEN],
+            vec![value::TEN, value::SEVEN]);
+        ensure_not_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::THREE],
+            vec![value::TEN, value::FOUR]);
 
-        assert_eq!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::ACE, value::SEVEN]).unwrap()),
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::EIGHT]).unwrap()));
+        rules = BJRules::new_complex(false, 4, true, 1);
 
-        assert_eq!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::ACE, value::SIX]).unwrap()),
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::SEVEN]).unwrap()));
-
-        assert!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::ACE, value::SEVEN]).unwrap()) !=
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::SEVEN]).unwrap()));
-
-        assert!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::ACE, value::THREE]).unwrap()) !=
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::FOUR]).unwrap()));
-
-        rules = BJRules::new_complex(false, 4, true);
-        assert!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::ACE, value::SIX]).unwrap()) !=
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::SEVEN]).unwrap()));
-
-        assert_eq!(
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::ACE, value::SEVEN]).unwrap()),
-            hasher.hash_hand(&rules,
-                             &BJHand::new_from_deck(&mut shoe,
-                                                    &vec![value::TEN, value::EIGHT]).unwrap()));
-
+        ensure_not_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::SIX],
+            vec![value::TEN, value::SEVEN]);
+        ensure_equal_values(
+            hasher,
+            rules,
+            vec![value::ACE, value::SEVEN],
+            vec![value::TEN, value::EIGHT]);
     }
 }

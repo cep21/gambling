@@ -83,6 +83,10 @@ impl BJHand {
         self.double_count += 1
     }
 
+    pub fn splits_done(&self) -> uint {
+        self.splits_done
+    }
+
     pub fn subtract_double_count(&mut self) {
         assert!(self.double_count >= 1);
         self.double_count -= 1;

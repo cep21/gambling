@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_expected_best_value_surr_16_a() {
-        let rules = BJRules::new_complex(true, 1, false);
+        let rules = BJRules::new_complex(true, 1, false, 1);
         check_best_value_rules(&value::ACE,   &vec![value::TEN, value::SIX], -0.5, &rules);
     }
 

@@ -11,23 +11,32 @@ pub struct BJRules{
     can_surrender: bool,
     split_limit: uint,
     hit_s17: bool,
+    max_doubles_single_hand: uint,
 }
 
 impl BJRules {
     pub fn new() -> BJRules {
-        BJRules::new_complex(false, 1, false)
+        BJRules::new_complex(false, 1, false, 1)
     }
 
-    pub fn new_complex(can_surrender: bool, split_limit: uint, hit_s17: bool) -> BJRules {
+    pub fn new_complex(can_surrender: bool, split_limit: uint, hit_s17: bool,
+                       max_doubles_single_hand: uint) -> BJRules {
         BJRules {
             can_surrender: can_surrender,
             split_limit: split_limit,
             hit_s17: hit_s17,
+            max_doubles_single_hand: max_doubles_single_hand,
         }
     }
 
     pub fn can_double(&self, h: &BJHand) -> bool {
-        h.len() == 2 && h.score() < 22
+        h.len() == 2 &&
+            h.score() < 22 &&
+            h.double_count() < self.max_doubles_single_hand
+    }
+
+    pub fn max_doubles_single_hand(&self) -> uint {
+        self.max_doubles_single_hand
     }
 
     pub fn can_take_action(&self, h: &BJHand, action: BJAction) -> bool {
@@ -48,6 +57,10 @@ impl BJRules {
         h.split_number() < self.split_limit 
             && h.len() == 2
             && h.cards()[0].value() == h.cards()[1].value()
+    }
+
+    pub fn split_limit(&self) -> uint {
+        self.split_limit
     }
 
     pub fn can_surrender(&self, h: &BJHand) -> bool {
@@ -106,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_rules_after_split() {
-        let rules = BJRules::new_complex(true, 1, false);
+        let rules = BJRules::new_complex(true, 1, false, 1);
         let mut shoe = new_infinite_shoe();
         let mut hand = BJHand::new_from_deck(
             &mut shoe, &vec![value::TEN, value::TEN]).unwrap();
