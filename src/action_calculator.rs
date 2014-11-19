@@ -297,6 +297,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_expected_best_value_88_10() {
         check_best_value(&value::TEN,   &vec![value::EIGHT, value::EIGHT], -0.480686);
     }
