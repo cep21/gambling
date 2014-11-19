@@ -10,17 +10,19 @@ use bjaction::BJAction::SPLIT;
 pub struct BJRules{
     can_surrender: bool,
     split_limit: uint,
+    hit_s17: bool,
 }
 
 impl BJRules {
     pub fn new() -> BJRules {
-        BJRules::new_complex(false, 1)
+        BJRules::new_complex(false, 1, false)
     }
 
-    pub fn new_complex(can_surrender: bool, split_limit: uint) -> BJRules {
+    pub fn new_complex(can_surrender: bool, split_limit: uint, hit_s17: bool) -> BJRules {
         BJRules {
             can_surrender: can_surrender,
             split_limit: split_limit,
+            hit_s17: hit_s17,
         }
     }
 
@@ -53,11 +55,11 @@ impl BJRules {
     }
 
     pub fn should_hit_dealer_hand(&self, h: &BJHand) -> bool {
-        h.score() < 17
+        h.score() < 17 || (self.hit_s17 && h.score() == 17 && h.is_soft())
     }
 
     pub fn dealer_hits_soft_score(&self, score: uint) -> bool {
-        score < 17
+        score < 17 || (self.hit_s17 && score == 17)
     }
 
     pub fn blackjack_payout(&self) -> f64 {
@@ -104,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_rules_after_split() {
-        let rules = BJRules::new_complex(true, 1);
+        let rules = BJRules::new_complex(true, 1, false);
         let mut shoe = new_infinite_shoe();
         let mut hand = BJHand::new_from_deck(
             &mut shoe, &vec![value::TEN, value::TEN]).unwrap();
