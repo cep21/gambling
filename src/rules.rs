@@ -56,6 +56,10 @@ impl BJRules {
         h.score() < 17
     }
 
+    pub fn dealer_hits_soft_score(&self, score: uint) -> bool {
+        score < 17
+    }
+
     pub fn blackjack_payout(&self) -> f64 {
         1.5
     }
