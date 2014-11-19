@@ -49,11 +49,12 @@ impl BJHand {
         assert_eq!(2, self.cards.len());
         assert_eq!(self.cards[0].value(), self.cards[1].value());
         self.splits_to_solve.push(self.cards[1]);
-        self.remove_card(self.cards[1]);
+        let card_to_remove = self.cards[1];
+        self.remove_card(card_to_remove);
     }
 
     pub fn unsplit(&mut self) {
-        assert!(self.splits_to_solve() );
+        assert!(self.splits_to_solve.len() > 0);
         // Force them to remove the previous cards and put them back in the shoe
         let c = self.splits_to_solve.pop().unwrap();
         assert_eq!(1, self.cards.len());
@@ -80,11 +81,11 @@ impl BJHand {
     }
 
     pub fn split_number(&self) -> uint {
-        return self.splits_done + self.splits_to_solve;
+        self.splits_done + self.splits_to_solve.len()
     }
 
     pub fn splits_to_solve(&self) -> uint {
-        self.splits_to_solve
+        self.splits_to_solve.len()
     }
 
     pub fn add_card(&mut self, card: Card) -> &mut BJHand {
@@ -117,26 +118,12 @@ impl BJHand {
         panic!("Could not find the card in the hand");
     }
 
-    pub fn new_split_hand(card: Card, splits_done: uint, splits_to_solve: uint) -> BJHand {
-        let mut h = BJHand {
-            score: 0,
-            ace_count: 0,
-            splits_done: splits_done,
-            splits_to_solve: splits_to_solve,
-            num_cards: 0,
-            double_count: 0,
-            cards: Vec::new(),
-        };
-        h.add_card(card);
-        h
-    }
-
     pub fn new() -> BJHand {
         return BJHand{
             score: 0,
             ace_count: 0,
             splits_done: 0,
-            splits_to_solve: 0,
+            splits_to_solve: Vec::new(),
             num_cards: 0,
             double_count: 0,
             cards: Vec::new(),

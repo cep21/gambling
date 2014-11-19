@@ -106,7 +106,9 @@ impl ActionCalculator for ActionCalculatorImpl {
                 // for the second then let the dealer resolve the second split.
                 match hand.splits_to_solve() > 0 {
                     false => Some(this_hands_value),
-                    true => Some(-1.0)
+                    true => {
+                        Some(-1.0)
+                    }
                 }
             }
             DOUBLE => {
@@ -142,7 +144,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                 match rules.can_split(hand) {
                     false => None,
                     true => {
-                        let card_in_next_hand = hand.split();
+                        hand.split();
                         let mut final_result = 0.0;
                         for &v in VALUES.iter() {
                             let count_of_val = d.count(&v);
@@ -162,7 +164,7 @@ impl ActionCalculator for ActionCalculatorImpl {
                                 d.insert(&card_from_deck);
                             }
                         }
-                        hand.unsplit(card_in_next_hand);
+                        hand.unsplit();
                         Some(final_result)
                     }
                 }
