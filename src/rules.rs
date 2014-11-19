@@ -64,6 +64,10 @@ impl BJRules {
         1.5
     }
 
+    pub fn automatic_win_at_hand_length(&self) -> uint {
+        0
+    }
+
     pub fn can_hit(&self, h: &BJHand) -> bool {
         h.score() < 21 && h.double_count() == 0
     }
