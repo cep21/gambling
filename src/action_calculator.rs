@@ -17,17 +17,39 @@ use shoe::shoe::DirectShoe;
 use shoe::randomshoe::SuitPicker;
 use hand_hasher::HandHasher;
 use hand_hasher::DeckHasher;
+use hash_database::HashDatabase;
 
 pub struct ActionCalculator<'a> {
     player_hand_hasher: &'a HandHasher + 'a,
     dealer_hand_hasher: &'a HandHasher + 'a,
     deck_hasher: &'a DeckHasher + 'a,
+    database: &'a mut HashDatabase + 'a,
 }
 
 impl <'a>ActionCalculator<'a> {
-    pub fn expected_value_best_action(&self, hand: &mut BJHand,
+    fn dbget(&self, hash1: &Vec<u8>, hash2: &Vec<u8>) -> Option<f64> {
+        let mut v3 = Vec::new();
+        v3.push_all(hash1.as_slice());
+        v3.push_all(hash2.as_slice());
+        self.database.get(v3)
+    }
+
+    fn dbstore(&mut self, hash1: &Vec<u8>, hash2: &Vec<u8>, value: f64) -> Option<f64> {
+        let mut v3 = Vec::new();
+        v3.push_all(hash1.as_slice());
+        v3.push_all(hash2.as_slice());
+        self.database.store(v3, value)
+    }
+    pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
+        match self.dbget(
+            &self.player_hand_hasher.hash_hand(rules, hand),
+            &self.deck_hasher.hash_deck(rules, d)) {
+            Some(s) => return s,
+            None => {}
+        }
+        println!("hand={}", hand);
         let mut best_result: Option<f64>  = None;
         // TODO: Can I just do something like BJAction.variants ??
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
@@ -48,10 +70,21 @@ impl <'a>ActionCalculator<'a> {
                 _ => {}
             }
         }
-        return best_result.unwrap();
+        assert!(best_result != None);
+        let to_return = best_result.unwrap();
+        match self.dbstore(
+            &self.player_hand_hasher.hash_hand(rules, hand),
+            &self.deck_hasher.hash_deck(rules, d), to_return) {
+            Some(_) => {
+                panic!("Logic loop????...")
+            }
+            None => {
+                to_return
+            }
+        }
     }
 
-    pub fn expected_value(&self, hand: &mut BJHand, dealer_up_card: &Card,
+    pub fn expected_value(&mut self, hand: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
         if !rules.can_take_action(hand, action) {
@@ -162,7 +195,7 @@ impl <'a>ActionCalculator<'a> {
         }
     }
 
-    pub fn expected_with_dealer(&self, player_hand: &BJHand,
+    pub fn expected_with_dealer(&mut self, player_hand: &BJHand,
                             dealer_hand: &mut BJHand, d: &mut DirectShoe,
                             rules: &BJRules) -> f64 {
         if !rules.should_hit_dealer_hand(dealer_hand) {
@@ -241,15 +274,17 @@ mod tests {
     use hand_hasher::DealerHandHasher;
     use hand_hasher::PlayerHandHasher;
     use hand_hasher::SuitlessDeckHasher;
+    use hash_database::InMemoryHashDatabase;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
                    expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
         use rules::BJRules;
-        let a = ActionCalculator {
+        let mut a = ActionCalculator {
             player_hand_hasher: &PlayerHandHasher,
             dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
+            database: &mut InMemoryHashDatabase::new(),
         };
         let rules = BJRules::new();
         let mut shoe = new_infinite_shoe();
@@ -272,10 +307,11 @@ mod tests {
     fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>,
                               expected: f64, rules: &BJRules) {
         use shoe::randomshoe::new_infinite_shoe;
-        let a = ActionCalculator {
+        let mut a = ActionCalculator {
             player_hand_hasher: &PlayerHandHasher,
             dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
+            database: &mut InMemoryHashDatabase::new(),
         };
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
@@ -305,12 +341,11 @@ mod tests {
 
     #[test]
     fn test_expected_best_value_surr_16_a() {
-        let rules = BJRules::new_complex(true, 1, false, 1);
+        let rules = BJRules::new_complex(true, 1, false, 1, false, false, false);
         check_best_value_rules(&value::ACE,   &vec![value::TEN, value::SIX], -0.5, &rules);
     }
 
     #[test]
-    #[ignore] // while slow
     fn test_expected_best_value_11_6() {
         check_best_value(&value::SIX,   &vec![value::FIVE, value::SIX], 0.667380);
     }
@@ -322,20 +357,23 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // while slow
+    //#[ignore]
+    fn test_expected_best_value_aa_10() {
+        check_best_value(&value::TEN,   &vec![value::ACE, value::ACE], 0.179689);
+    }
+
+    #[test]
     fn test_expected_best_value_s18_9() {
         check_best_value(&value::NINE,   &vec![value::ACE, value::SEVEN], -0.100744);
     }
 
     #[test]
-    #[ignore] // while slow
     fn test_expected_best_value_9_2() {
         // HIT
         check_best_value(&value::TWO,   &vec![value::FIVE, value::FOUR], 0.074446);
     }
 
     #[test]
-    #[ignore] // while slow
     fn test_expected_best_value_9_3() {
         // DOUBLE
         check_best_value(&value::THREE,   &vec![value::FIVE, value::FOUR], 0.120816);
@@ -360,6 +398,11 @@ mod tests {
     #[test]
     fn test_expected_best_value_16_7() {
         check_best_value(&value::SEVEN,  &vec![value::TEN, value::SIX]             , -0.414779);
+    }
+
+    #[test]
+    fn test_expected_best_value_a6_6() {
+        check_best_value(&value::SIX,  &vec![value::ACE, value::SIX]             , 0.256104);
     }
 
     #[test]

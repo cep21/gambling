@@ -16,3 +16,4 @@ pub mod bjaction;
 pub mod action_calculator;
 pub mod rules;
 pub mod hand_hasher;
+pub mod hash_database;

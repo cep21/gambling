@@ -2,6 +2,7 @@ use hand::BJHand;
 use std::fmt;
 use bjaction::BJAction;
 use bjaction::BJAction::HIT;
+use cards::value::ACE;
 use bjaction::BJAction::STAND;
 use bjaction::BJAction::DOUBLE;
 use bjaction::BJAction::SURRENDER;
@@ -12,24 +13,44 @@ pub struct BJRules{
     split_limit: uint,
     hit_s17: bool,
     max_doubles_single_hand: uint,
+    resplit_aces: bool,
+    draw_on_split_aces: bool,
+    double_after_split: bool,
 }
 
 impl BJRules {
+    /**
+      Default rules: noR, split-4, s17, Dany, no RsA, Single card on ace splits, DaS
+      */
     pub fn new() -> BJRules {
-        BJRules::new_complex(false, 1, false, 1)
+        BJRules::new_complex(false, 3, false, 1, false, false, true)
     }
 
     pub fn new_complex(can_surrender: bool, split_limit: uint, hit_s17: bool,
-                       max_doubles_single_hand: uint) -> BJRules {
+                       max_doubles_single_hand: uint, resplit_aces: bool,
+                       draw_on_split_aces: bool,
+                       double_after_split: bool) -> BJRules {
         BJRules {
             can_surrender: can_surrender,
             split_limit: split_limit,
             hit_s17: hit_s17,
             max_doubles_single_hand: max_doubles_single_hand,
+            resplit_aces: resplit_aces,
+            draw_on_split_aces: draw_on_split_aces,
+            double_after_split: double_after_split,
         }
     }
 
     pub fn can_double(&self, h: &BJHand) -> bool {
+        if h.split_number() > 0 {
+            if !self.double_after_split {
+                return false;
+            }
+            if h.cards()[0].value() == &ACE {
+                // Very strange rule ...
+                return self.draw_on_split_aces;
+            }
+        }
         h.len() == 2 &&
             h.score() < 22 &&
             h.double_count() < self.max_doubles_single_hand
@@ -54,8 +75,16 @@ impl BJRules {
     }
 
     pub fn can_split(&self, h: &BJHand) -> bool {
+        if h.cards()[0].value() == &ACE {
+            // Can you split your aces?
+            if !self.resplit_aces && h.split_number() != 0 {
+                assert!(h.split_number() == 1);
+                return false;
+            }
+        }
         h.split_number() < self.split_limit 
             && h.len() == 2
+            // Can you split J/Q or can you only split J/J
             && h.cards()[0].value() == h.cards()[1].value()
     }
 
@@ -84,6 +113,13 @@ impl BJRules {
     }
 
     pub fn can_hit(&self, h: &BJHand) -> bool {
+        if h.split_number() > 0 {
+            if !self.draw_on_split_aces && h.cards()[0].value() == &ACE {
+                // If you can't hit aces, the only valid 'hit' is when you're
+                // getting that 2nd card
+                return h.len() == 1
+            }
+        }
         h.score() < 21 && h.double_count() == 0
     }
 
@@ -119,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_rules_after_split() {
-        let rules = BJRules::new_complex(true, 1, false, 1);
+        let rules = BJRules::new_complex(true, 1, false, 1, false, false, false);
         let mut shoe = new_infinite_shoe();
         let mut hand = BJHand::new_from_deck(
             &mut shoe, &vec![value::TEN, value::TEN]).unwrap();

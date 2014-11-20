@@ -15,6 +15,7 @@ use shoe::shoe::DirectShoe;
 
 pub trait HandHasher {
     fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8>;
+    fn hash_hand_ignore_actions(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8>;
 }
 
 pub trait DeckHasher {
@@ -52,14 +53,14 @@ fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
             (i.max_value - 1).to_biguint().unwrap();
     }
     let mut bv = Bitv::with_capacity(bits_required.bits(), false);
-    println!("val={}, bits_required={}", val, bits_required.bits());
+//    println!("val={}, bits_required={}", val, bits_required.bits());
     let mut current_bit = 0u;
     while val > 0u.to_biguint().unwrap() {
         bv.set(current_bit, val % 2u.to_biguint().unwrap() == 1u.to_biguint().unwrap());
         current_bit += 1;
         val = val / 2u.to_biguint().unwrap();
     }
-    println!("bv={}", bv);
+//    println!("bv={}", bv);
     return bv.to_bytes();
 }
 
@@ -84,12 +85,15 @@ impl HandHasher for DealerHandHasher {
                                        false => 0,
                                          })])
     }
+    fn hash_hand_ignore_actions(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
+        self.hash_hand(rules, hand)
+    }
 }
 
 pub struct PlayerHandHasher;
 
-impl HandHasher for PlayerHandHasher {
-    fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
+impl PlayerHandHasher {
+    fn hash_impl(&self, rules: &BJRules, hand: &BJHand, include_actions: bool) -> Vec<u8> {
         assert!(hand.len() >= 1);
         let mut score = hand.score();
         // All scores > 22 are the same to us
@@ -135,15 +139,26 @@ impl HandHasher for PlayerHandHasher {
                 rules.split_limit() + 1,
                 hand.splits_to_solve()));
         }
-        let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
-        for &action in actions.iter() {
-            v.push(HashRange::new(2, match rules.can_take_action(hand, action) {
-                true => 1,
-                false => 0,
-            }));
+        if include_actions {
+            let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
+            for &action in actions.iter() {
+                v.push(HashRange::new(2, match rules.can_take_action(hand, action) {
+                    true => 1,
+                    false => 0,
+                }));
+            }
         }
 
         create_hash(v.as_slice())
+    }
+}
+
+impl HandHasher for PlayerHandHasher {
+    fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
+        self.hash_impl(rules, hand, true)
+    }
+    fn hash_hand_ignore_actions(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
+        self.hash_impl(rules, hand, false)
     }
 }
 
@@ -293,7 +308,7 @@ mod tests {
             vec![value::ACE, value::THREE],
             vec![value::TEN, value::FOUR]);
 
-        rules = BJRules::new_complex(false, 4, true, 1);
+        rules = BJRules::new_complex(false, 4, true, 1, false, false, false);
 
         ensure_not_equal_values(
             hasher,
@@ -346,7 +361,7 @@ mod tests {
             vec![value::EIGHT, value::TEN]);
 
         // No surrender/split or double, so these two hands are the same
-        rules = BJRules::new_complex(false, 0, true, 0);
+        rules = BJRules::new_complex(false, 0, true, 0, false, false, false);
         ensure_equal_values(
             hasher,
             rules,
