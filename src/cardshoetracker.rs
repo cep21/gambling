@@ -29,6 +29,12 @@ impl <'a>DirectShoe for CardShoeTracker<'a> {
     fn insert(&mut self, v: &Card) {
         self.wrapping.insert(v);
     }
+    fn initial_length(&self) -> uint {
+        self.wrapping.initial_length()
+    }
+    fn maximum_count_of_any_value(&self) -> uint {
+        self.wrapping.maximum_count_of_any_value()
+    }
 }
 
 impl <'a>CardShoeTracker<'a> {

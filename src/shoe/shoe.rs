@@ -7,6 +7,8 @@ pub trait DirectShoe {
     fn count(&self, v: &Value) -> uint;
     fn remove(&mut self, v: &Value) -> Option<Card>;
     fn insert(&mut self, v: &Card);
+    fn initial_length(&self) -> uint;
+    fn maximum_count_of_any_value(&self) -> uint;
 }
 
 // TODO: define only for test?

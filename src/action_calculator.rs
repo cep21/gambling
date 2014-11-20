@@ -23,6 +23,7 @@ impl ActionCalculator {
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
         let mut best_result: Option<f64>  = None;
+        // TODO: Can I just do something like BJAction.variants ??
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
         for &a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, a, rules) {

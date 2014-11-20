@@ -281,7 +281,9 @@ impl SuitPicker for RandomDeckSuitPicker {
 
 pub struct GenericDirectShoe<'a> {
     value_picker: Box<ValuePicker + 'a>,
-    suit_pickers: Box<[Box<SuitPicker + 'a>]>
+    suit_pickers: Box<[Box<SuitPicker + 'a>]>,
+    initial_length: uint,
+    maximum_count_of_any_value: uint,
 }
 /*
 impl <'a>GenericDirectShoe<'a> {
@@ -336,6 +338,12 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
         self.value_picker.insert(v.value());
         self.suit_pickers[v.value().index()].insert(v.suit());
     }
+    fn initial_length(&self) -> uint {
+        self.initial_length
+    }
+    fn maximum_count_of_any_value(&self) -> uint {
+        self.maximum_count_of_any_value
+    }
 }
 
 pub fn new_random_shoe<'a>() -> GenericDirectShoe<'a> {
@@ -347,6 +355,8 @@ pub fn new_random_shoe<'a>() -> GenericDirectShoe<'a> {
     GenericDirectShoe {
         value_picker: box vp,
         suit_pickers: sp.into_boxed_slice(),
+        initial_length: 52,
+        maximum_count_of_any_value: 4,
     }
 }
 
@@ -359,6 +369,8 @@ pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
     GenericDirectShoe {
         value_picker: box vp,
         suit_pickers: sp.into_boxed_slice(),
+        initial_length: 52,
+        maximum_count_of_any_value: 4,
     }
     //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
 }
