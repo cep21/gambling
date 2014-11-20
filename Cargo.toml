@@ -3,6 +3,12 @@
 name = "cards"
 version = "0.0.1"
 authors = ["Jack Lindamood <jack@signalfuse.com>"]
+license = "Apache-2.0"
+homepage = "https://github.com/rust-lang/num"
+repository = "https://github.com/rust-lang/num"
+description = """
+Rustlang code for gambling odds generation
+"""
 
 [dependencies.num]
 
