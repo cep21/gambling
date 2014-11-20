@@ -74,7 +74,7 @@ impl HandHasher for DealerHandHasher {
 
         // Hash together the score and softness
         assert!(score <= 22);
-        create_hash([
+        create_hash(&[
                     HashRange::new(23, score),
                     HashRange::new(2,
         // Treat soft 17 same as hard 17 if the dealer stands on both
@@ -187,47 +187,47 @@ mod tests {
     fn test_create_hash() {
         assert_eq!(
             vec![128],
-            create_hash([HashRange::new(2, 1)]));
+            create_hash(&[HashRange::new(2, 1)]));
         assert_eq!(
             vec![128],
-            create_hash([HashRange::new(4, 1)]));
+            create_hash(&[HashRange::new(4, 1)]));
         assert_eq!(
             vec![128],
-            create_hash([HashRange::new(128, 1)]));
+            create_hash(&[HashRange::new(128, 1)]));
         assert_eq!(
             vec![128],
-            create_hash([HashRange::new(256, 1)]));
+            create_hash(&[HashRange::new(256, 1)]));
         // At this boundary, we require two bytes
         assert_eq!(
             vec![128, 0],
-            create_hash([HashRange::new(257, 1)]));
+            create_hash(&[HashRange::new(257, 1)]));
         // At this boundary, we require two bytes
         assert_eq!(
             vec![0, 128],
-            create_hash([HashRange::new(257, 256)]));
+            create_hash(&[HashRange::new(257, 256)]));
 
         assert_eq!(
             vec![0],
-            create_hash([
+            create_hash(&[
                         HashRange::new(2, 0),
                         HashRange::new(2, 0)
                         ]));
         assert_eq!(
             vec![0],
-            create_hash([
+            create_hash(&[
                         HashRange::new(2, 0),
                         HashRange::new(128, 0)
                         ]));
         assert_eq!(
             vec![0, 0],
-            create_hash([
+            create_hash(&[
                         HashRange::new(2, 0),
                         HashRange::new(128, 0),
                         HashRange::new(2, 0),
                         ]));
         assert_eq!(
             vec![255],
-            create_hash([
+            create_hash(&[
                         HashRange::new(2, 1),
                         HashRange::new(16, 15),
                         HashRange::new(8, 7),
