@@ -381,12 +381,12 @@ mod tests {
         let shoe1 = DirectActualShoe {
             cards: &mut cards_in_deck(1),
             initial_length: 52,
-            maximum_count_of_any_value: 13,
+            maximum_count_of_any_value: 4,
         };
         let mut shoe2 = DirectActualShoe {
             cards: &mut cards_in_deck(1),
             initial_length: 52,
-            maximum_count_of_any_value: 13,
+            maximum_count_of_any_value: 4,
         };
         assert_eq!(
             hasher.hash_deck(&rules,
