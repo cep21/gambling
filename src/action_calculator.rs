@@ -15,10 +15,16 @@ use cards::value::TEN;
 use rules::BJRules;
 use shoe::shoe::DirectShoe;
 use shoe::randomshoe::SuitPicker;
+use hand_hasher::HandHasher;
+use hand_hasher::DeckHasher;
 
-pub struct ActionCalculator;
+pub struct ActionCalculator<'a> {
+    player_hand_hasher: &'a HandHasher + 'a,
+    dealer_hand_hasher: &'a HandHasher + 'a,
+    deck_hasher: &'a DeckHasher + 'a,
+}
 
-impl ActionCalculator {
+impl <'a>ActionCalculator<'a> {
     pub fn expected_value_best_action(&self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
@@ -232,12 +238,19 @@ mod tests {
     use std::num::Float;
     use cards::value;
     use rules::BJRules;
+    use hand_hasher::DealerHandHasher;
+    use hand_hasher::PlayerHandHasher;
+    use hand_hasher::SuitlessDeckHasher;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
                    expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
         use rules::BJRules;
-        let a = ActionCalculator;
+        let a = ActionCalculator {
+            player_hand_hasher: &PlayerHandHasher,
+            dealer_hand_hasher: &DealerHandHasher,
+            deck_hasher: &SuitlessDeckHasher,
+        };
         let rules = BJRules::new();
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
@@ -259,7 +272,11 @@ mod tests {
     fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>,
                               expected: f64, rules: &BJRules) {
         use shoe::randomshoe::new_infinite_shoe;
-        let a = ActionCalculator;
+        let a = ActionCalculator {
+            player_hand_hasher: &PlayerHandHasher,
+            dealer_hand_hasher: &DealerHandHasher,
+            deck_hasher: &SuitlessDeckHasher,
+        };
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
         assert_eq!(
