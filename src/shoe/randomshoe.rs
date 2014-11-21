@@ -1,6 +1,10 @@
 use shoe::shoe::DirectShoe;
 use cards::value::Value;
 use cards::value::VALUES;
+use cards::value::TEN;
+use cards::value::JACK;
+use cards::value::QUEEN;
+use cards::value::KING;
 use cards::card::Card;
 use cards::suit::Suit;
 use cards::suit::SUITS;
@@ -215,6 +219,16 @@ impl RandomDeckValuePicker {
             item_picker: RandomItemPicker::new(4 * num_decks, VALUES.len()),
         };
     }
+    pub fn new_faceless(num_decks: uint) -> RandomDeckValuePicker {
+        let mut ip = RandomItemPicker::new(4 * num_decks, VALUES.len());
+        ip.indexed_value_counts[TEN.index()].counts = 4 * 4 * num_decks;
+        ip.indexed_value_counts[JACK.index()].counts = 0;
+        ip.indexed_value_counts[QUEEN.index()].counts = 0;
+        ip.indexed_value_counts[KING.index()].counts = 0;
+        RandomDeckValuePicker{
+            item_picker: ip,
+        }
+    }
 }
 
 impl ValuePicker for RandomDeckValuePicker {
@@ -351,6 +365,26 @@ pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
     for _ in range (0, 13u) {
         sp.push(box RandomDeckSuitPicker::new(num_decks));
+    }
+    GenericDirectShoe {
+        value_picker: box vp,
+        suit_pickers: sp.into_boxed_slice(),
+        initial_length: Some(num_decks * 52),
+        maximum_count_of_any_value: Some(4 * num_decks),
+    }
+}
+
+pub fn new_faceless_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
+    let vp = RandomDeckValuePicker::new_faceless(num_decks);
+    let mut sp : Vec<Box<SuitPicker>> = Vec::new();
+    for i in range (0, 13u) {
+        match VALUES[i] {
+            TEN =>  sp.push(box RandomDeckSuitPicker::new(num_decks * 4)),
+            JACK =>  sp.push(box RandomDeckSuitPicker::new(0)),
+            QUEEN =>  sp.push(box RandomDeckSuitPicker::new(0)),
+            KING =>  sp.push(box RandomDeckSuitPicker::new(0)),
+            _ => sp.push(box RandomDeckSuitPicker::new(num_decks)),
+        }
     }
     GenericDirectShoe {
         value_picker: box vp,

@@ -21,7 +21,6 @@ use hash_database::HashDatabase;
 
 pub struct ActionCalculator<'a> {
     player_hand_hasher: &'a HandHasher + 'a,
-    dealer_hand_hasher: &'a HandHasher + 'a,
     deck_hasher: &'a DeckHasher + 'a,
     database: &'a mut HashDatabase + 'a,
 }
@@ -119,7 +118,7 @@ impl <'a>ActionCalculator<'a> {
                         None => (d.len(), None)
                     }
                 };
-                println!("Valid up {} w/ {}  is {}", dealer_up_card, hand, num_valid_down_cards);
+//                println!("Valid up {} w/ {}  is {}", dealer_up_card, hand, num_valid_down_cards);
                 let mut final_result = 0.0;
                 for &v in VALUES.iter() {
                     let count_of_val = d.count(&v);
@@ -332,10 +331,8 @@ mod tests {
     use bjaction::BJAction::STAND;
     use bjaction::BJAction::HIT;
     use rules::BJRules;
-    use hand_hasher::DealerHandHasher;
     use hand_hasher::PlayerHandHasher;
     use hand_hasher::SuitlessDeckHasher;
-    use hash_database::NoOpDatabase;
     use hash_database::InMemoryHashDatabase;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
@@ -344,7 +341,6 @@ mod tests {
         use rules::BJRules;
         let mut a = ActionCalculator {
             player_hand_hasher: &PlayerHandHasher,
-            dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
             database: &mut InMemoryHashDatabase::new(),
         };
@@ -377,7 +373,6 @@ mod tests {
                               expected: f64, rules: &BJRules, shoe: &mut DirectShoe) {
         let mut a = ActionCalculator {
             player_hand_hasher: &PlayerHandHasher,
-            dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
             database: &mut InMemoryHashDatabase::new(),
         };
@@ -396,7 +391,6 @@ mod tests {
                               action: BJAction) {
         let mut a = ActionCalculator {
             player_hand_hasher: &PlayerHandHasher,
-            dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
             database: &mut InMemoryHashDatabase::new(),
         };
@@ -446,6 +440,12 @@ mod tests {
     #[ignore]
     fn test_expected_best_value_88_10() {
         check_best_value(&value::TEN,   &vec![value::EIGHT, value::EIGHT], -0.480686);
+    }
+
+    #[test]
+//    #[ignore]
+    fn test_expected_best_value_11_a() {
+        check_best_value(&value::ACE,   &vec![value::EIGHT, value::THREE], 0.143001);
     }
 
     #[test]
@@ -622,11 +622,12 @@ mod tests {
     }
 
     #[test]
+//    #[ignore]
     fn test_expected_best_value_1d_88_vs_10() {
-        use shoe::randomshoe::new_random_shoe;
+        use shoe::randomshoe::new_faceless_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
-        let mut shoe = new_random_shoe(1);
+        let rules = BJRules::new_complex(false, 1, false, 1, false, false, true);
+        let mut shoe = new_faceless_random_shoe(1);
         check_best_value_rules_deck(
             &value::TEN,
             &vec![value::EIGHT, value::EIGHT],
