@@ -29,6 +29,18 @@ impl HashDatabase for InMemoryHashDatabase {
     }
 }
 
+
+pub struct NoOpDatabase;
+impl HashDatabase for NoOpDatabase {
+    fn get(&self, _: Vec<u8>) -> Option<f64> {
+        None
+    }
+    fn store(&mut self, _: Vec<u8>, _: f64) -> Option<f64> {
+        None
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     extern crate test;

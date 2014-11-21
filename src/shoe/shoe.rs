@@ -7,8 +7,10 @@ pub trait DirectShoe {
     fn count(&self, v: &Value) -> uint;
     fn remove(&mut self, v: &Value) -> Option<Card>;
     fn insert(&mut self, v: &Card);
-    fn initial_length(&self) -> uint;
-    fn maximum_count_of_any_value(&self) -> uint;
+    // No initial length means the deck has no initial length: is infinite
+    fn initial_length(&self) -> Option<uint>;
+    // No count means the deck has no initial length: is infinite
+    fn maximum_count_of_any_value(&self) -> Option<uint>;
 }
 
 // TODO: define only for test?

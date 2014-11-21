@@ -53,7 +53,7 @@ impl <'a>ActionCalculator<'a> {
         let mut best_result: Option<f64>  = None;
         // TODO: Can I just do something like BJAction.variants ??
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
-//        let mut best_action = None;
+        let mut best_action = None;
         for &a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, a, rules) {
                 Some(r) => {
@@ -61,12 +61,12 @@ impl <'a>ActionCalculator<'a> {
                         Some(b) => {
                             if b < r {
                                 best_result = Some(r);
-//                                best_action = Some(a);
+                                best_action = Some(a);
                             }
                         }
                         None => {
                             best_result = Some(r);
-//                            best_action = Some(a);
+                            best_action = Some(a);
                         }
                     }
                 }
@@ -76,7 +76,7 @@ impl <'a>ActionCalculator<'a> {
         assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-//        println!("Best action {} => {}", hand, best_action.unwrap())
+        println!("Best action {} => {}: {}", hand, best_action.unwrap(), to_return)
         match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
@@ -90,18 +90,55 @@ impl <'a>ActionCalculator<'a> {
     pub fn expected_value(&mut self, hand: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
+        use hand::score_for_value;
         if !rules.can_take_action(hand, action) {
             return None;
         }
         return match action {
             HIT => {
                 assert!(rules.can_hit(hand));
+                // Tricky: If the dealer is showing a TEN, then
+                //         you're more likely to get a ACE than
+                //         any other card because you know the
+                //         dealer doesn't have one of your aces
+                let (num_valid_down_cards, invalid_down_val) = {
+                    if rules.dealer_blackjack_after_hand() {
+                        (d.len(), None)
+                    } else {
+                        match score_for_value(dealer_up_card.value()) {
+                            10 => (d.len() - d.count(&ACE), Some(score_for_value(&ACE))),
+                            11 => (d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
+                               d.count(&KING), Some(score_for_value(&TEN))),
+                            _ => (d.len(), None)
+                        }
+                    }
+                };
+                println!("Valid up {} w/ {}  is {}", dealer_up_card, hand, num_valid_down_cards);
                 let mut final_result = 0.0;
                 for &v in VALUES.iter() {
                     let count_of_val = d.count(&v);
                     if count_of_val > 0 {
-                        let odds_of_value =
-                            count_of_val as f64 / d.len() as f64;
+                        // Deck is [1,2, 2, 3, 3, 4, 4, 4]
+                        //  Odds of a 3 (when you know the dealer doesn't have 4) are: 
+                        //   (2/5) * (1/7) + (3/5) * (2/7)
+                        // Odds of a 3 are odds of sum of:
+                        //  (1) Dealer has three * odds of another three
+                        //  (2) Dealer does not have three * odds of your three
+                        let odds_of_value = match d.initial_length() {
+                            None => count_of_val as f64 / d.len() as f64,
+                            Some(_) =>
+                                match invalid_down_val == Some(score_for_value(&v)) {
+                                true =>
+                                  count_of_val as f64 / (d.len() - 1) as f64,
+                                false =>
+                                   (count_of_val as f64 / num_valid_down_cards as f64) *
+                                    ((count_of_val - 1) as f64 / (d.len() - 1) as f64)
+                                    +
+                                    ((num_valid_down_cards - count_of_val) as f64 /
+                                     num_valid_down_cards as f64) *
+                                    ((count_of_val) as f64 / (d.len() - 1) as f64),
+                            }
+                        };
                         let card_from_deck = match d.remove(&v) {
                             Some(c) => c,
                             None => {
@@ -221,17 +258,24 @@ impl <'a>ActionCalculator<'a> {
         } else {
             // The dealer hits ... takes a random card
             let mut final_result = 0.0;
+            // Limit the number of valid cards on the first hand if
+            // you already nkow the dealer doesn't have blackjack
             let number_of_valid_cards = {
-                if rules.dealer_blackjack_after_hand() ||
-                    dealer_hand.len() != 1 {
-                        d.len()
-                } else {
-                    match dealer_hand.score() {
-                        10 => d.len() - d.count(&ACE),
-                        11 => d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
-                           d.count(&KING),
-                        _ => d.len()
-                    }
+                match d.initial_length() {
+                    Some(_) =>  {
+                        if rules.dealer_blackjack_after_hand() ||
+                            dealer_hand.len() != 1 {
+                                d.len()
+                        } else {
+                            match dealer_hand.score() {
+                                10 => d.len() - d.count(&ACE),
+                                11 => d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
+                                   d.count(&KING),
+                                _ => d.len()
+                            }
+                        }
+                    },
+                    None => d.len(),
                 }
             };
             for &v in VALUES.iter() {
@@ -284,6 +328,7 @@ mod tests {
     use hand_hasher::DealerHandHasher;
     use hand_hasher::PlayerHandHasher;
     use hand_hasher::SuitlessDeckHasher;
+    use hash_database::NoOpDatabase;
     use hash_database::InMemoryHashDatabase;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
@@ -346,7 +391,8 @@ mod tests {
             player_hand_hasher: &PlayerHandHasher,
             dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
-            database: &mut InMemoryHashDatabase::new(),
+//            database: &mut InMemoryHashDatabase::new(),
+            database: &mut NoOpDatabase,
         };
         let expansion = 1000000.0f64;
         let v =  a.expected_value(
@@ -499,15 +545,31 @@ mod tests {
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
         let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
+        // Tricky: You know the dealer doesn't have an ace, so you're more likely
+        //         than other random cards to get an ace
         check_best_value_rules_deck_action(
             &value::TEN,
             &vec![value::KING, value::SIX],
-            Some(-0.506929),
+            Some(-0.5069291),
             &rules,
             &mut shoe,
             BJAction::HIT);
     }
 
+    #[test]
+    fn test_expected_value_1d_16_9_hit() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck_action(
+            &value::NINE,
+            &vec![value::KING, value::SIX],
+            Some(-0.479306),
+            &rules,
+            &mut shoe,
+            BJAction::HIT);
+    }
 
     #[test]
     fn test_expected_best_value_1d_10_9_vs_10() {

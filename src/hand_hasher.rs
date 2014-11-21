@@ -170,12 +170,17 @@ pub struct SuitlessDeckHasher;
 impl DeckHasher for SuitlessDeckHasher {
     fn hash_deck(&self, _: &BJRules, shoe: &DirectShoe) -> Vec<u8> {
         let mut vec = Vec::new();
-        for &v in VALUES.iter() {
-            vec.push(HashRange::new(
-                    shoe.maximum_count_of_any_value() + 1,
-                    shoe.count(&v)));
+        match shoe.maximum_count_of_any_value() {
+            None => create_hash(vec.as_slice()),
+            Some(s) => {
+                for &v in VALUES.iter() {
+                    vec.push(HashRange::new(
+                            s + 1,
+                            shoe.count(&v)));
+                }
+                create_hash(vec.as_slice())
+            }
         }
-        create_hash(vec.as_slice())
     }
 }
 
@@ -395,13 +400,13 @@ mod tests {
         let hasher = SuitlessDeckHasher;
         let shoe1 = DirectActualShoe {
             cards: &mut cards_in_deck(1),
-            initial_length: 52,
-            maximum_count_of_any_value: 4,
+            initial_length: Some(52),
+            maximum_count_of_any_value: Some(4),
         };
         let mut shoe2 = DirectActualShoe {
             cards: &mut cards_in_deck(1),
-            initial_length: 52,
-            maximum_count_of_any_value: 4,
+            initial_length: Some(52),
+            maximum_count_of_any_value: Some(4),
         };
         assert_eq!(
             hasher.hash_deck(&rules,
@@ -422,13 +427,13 @@ mod tests {
         let hasher = SuitlessDeckHasher;
         let mut shoe3 = DirectActualShoe {
             cards: &mut cards_in_deck(1),
-            initial_length: 52,
-            maximum_count_of_any_value: 4,
+            initial_length: Some(52),
+            maximum_count_of_any_value: Some(4),
         };
         let mut shoe4 = DirectActualShoe {
             cards: &mut cards_in_deck(1),
-            initial_length: 52,
-            maximum_count_of_any_value: 4,
+            initial_length: Some(52),
+            maximum_count_of_any_value: Some(4),
         };
 
         shoe3.remove(&value::TEN);

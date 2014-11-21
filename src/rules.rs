@@ -124,7 +124,7 @@ impl BJRules {
     }
 
     pub fn dealer_blackjack_after_hand(&self) -> bool {
-        return false;
+        false
     }
 
     pub fn is_blackjack(&self, hand: &BJHand) -> bool {

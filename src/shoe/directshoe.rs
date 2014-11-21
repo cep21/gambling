@@ -5,8 +5,8 @@ use shoe::shoe::DirectShoe;
 
 pub struct DirectActualShoe<'a> {
     pub cards: &'a mut Vec<Card>,
-    pub initial_length: uint,
-    pub maximum_count_of_any_value: uint,
+    pub initial_length: Option<uint>,
+    pub maximum_count_of_any_value: Option<uint>,
 }
 
 impl <'a>DirectShoe for DirectActualShoe<'a> {
@@ -36,10 +36,10 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
     fn insert(&mut self, v: &Card) {
         self.cards.push(*v);
     }
-    fn initial_length(&self) -> uint {
+    fn initial_length(&self) -> Option<uint> {
         self.initial_length
     }
-    fn maximum_count_of_any_value(&self) -> uint {
+    fn maximum_count_of_any_value(&self) -> Option<uint> {
         self.maximum_count_of_any_value
     }
 }
@@ -62,15 +62,15 @@ fn test_direct() {
     let v = &mut Vec::new();
     let ds = DirectActualShoe {
         cards: v,
-        initial_length: 0,
-        maximum_count_of_any_value: 0,
+        initial_length: Some(0),
+        maximum_count_of_any_value: Some(0),
     };
     assert_eq!(0, ds.len());
 
     let mut ds2 = DirectActualShoe {
         cards: &mut cards_in_deck(1),
-        initial_length: 52,
-        maximum_count_of_any_value: 4,
+        initial_length: Some(52),
+        maximum_count_of_any_value: Some(4),
     };
 
     test_single_deck(&mut ds2);
