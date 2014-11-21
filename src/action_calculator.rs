@@ -609,10 +609,10 @@ mod tests {
 
     #[test]
     fn test_expected_best_value_1d_5_6_vs_6() {
-        use shoe::randomshoe::new_random_shoe;
+        use shoe::randomshoe::new_faceless_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
         let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
-        let mut shoe = new_random_shoe(1);
+        let mut shoe = new_faceless_random_shoe(1);
         check_best_value_rules_deck(
             &value::SIX,
             &vec![value::FIVE, value::SIX],
@@ -622,7 +622,7 @@ mod tests {
     }
 
     #[test]
-//    #[ignore]
+    #[ignore]
     fn test_expected_best_value_1d_88_vs_10() {
         use shoe::randomshoe::new_faceless_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
