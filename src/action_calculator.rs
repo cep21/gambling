@@ -102,15 +102,21 @@ impl <'a>ActionCalculator<'a> {
                 //         any other card because you know the
                 //         dealer doesn't have one of your aces
                 let (num_valid_down_cards, invalid_down_val) = {
-                    if rules.dealer_blackjack_after_hand() {
-                        (d.len(), None)
-                    } else {
-                        match score_for_value(dealer_up_card.value()) {
-                            10 => (d.len() - d.count(&ACE), Some(score_for_value(&ACE))),
-                            11 => (d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
-                               d.count(&KING), Some(score_for_value(&TEN))),
-                            _ => (d.len(), None)
-                        }
+                    match d.initial_length() {
+                        Some(_) => {
+                            if rules.dealer_blackjack_after_hand() {
+                                (d.len(), None)
+                            } else {
+                                match score_for_value(dealer_up_card.value()) {
+                                    10 => (d.len() - d.count(&ACE), Some(score_for_value(&ACE))),
+                                    11 => (d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
+                                       d.count(&KING), Some(score_for_value(&TEN))),
+                                    _ => (d.len(), None)
+                                }
+                            }
+                        },
+                        // The second None here is KIND OF a lie ... oh well
+                        None => (d.len(), None)
                     }
                 };
                 println!("Valid up {} w/ {}  is {}", dealer_up_card, hand, num_valid_down_cards);
@@ -261,8 +267,9 @@ impl <'a>ActionCalculator<'a> {
             // Limit the number of valid cards on the first hand if
             // you already nkow the dealer doesn't have blackjack
             let number_of_valid_cards = {
-                match d.initial_length() {
-                    Some(_) =>  {
+
+//                match d.initial_length() {
+//                    Some(_) =>  {
                         if rules.dealer_blackjack_after_hand() ||
                             dealer_hand.len() != 1 {
                                 d.len()
@@ -274,9 +281,9 @@ impl <'a>ActionCalculator<'a> {
                                 _ => d.len()
                             }
                         }
-                    },
-                    None => d.len(),
-                }
+//                    },
+//                    None => d.len(),
+//                }
             };
             for &v in VALUES.iter() {
                 let count_of_val = d.count(&v);
@@ -391,8 +398,7 @@ mod tests {
             player_hand_hasher: &PlayerHandHasher,
             dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
-//            database: &mut InMemoryHashDatabase::new(),
-            database: &mut NoOpDatabase,
+            database: &mut InMemoryHashDatabase::new(),
         };
         let expansion = 1000000.0f64;
         let v =  a.expected_value(
@@ -443,13 +449,16 @@ mod tests {
     }
 
     #[test]
-    //#[ignore]
+    fn test_expected_best_value_92_10() {
+        check_best_value(&value::TEN,   &vec![value::NINE, value::TWO], 0.179689);
+    }
+
+    #[test]
     fn test_expected_best_value_aa_10() {
         check_best_value(&value::TEN,   &vec![value::ACE, value::ACE], 0.179689);
     }
 
     #[test]
-    //#[ignore]
     fn test_expected_best_value_aa_2() {
         check_best_value(&value::TWO,   &vec![value::ACE, value::ACE], 0.470641);
     }
@@ -510,7 +519,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_expected_best_value_1d_16_10() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
@@ -519,7 +527,7 @@ mod tests {
         check_best_value_rules_deck(
             &value::TEN,
             &vec![value::TEN, value::SIX],
-            -0.506929,
+            -0.5069292,
             &rules,
             &mut shoe);
     }
@@ -608,6 +616,20 @@ mod tests {
         check_best_value_rules_deck(
             &value::SIX,
             &vec![value::FIVE, value::SIX],
+            0.761392,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_88_vs_10() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::TEN,
+            &vec![value::EIGHT, value::EIGHT],
             0.761392,
             &rules,
             &mut shoe);

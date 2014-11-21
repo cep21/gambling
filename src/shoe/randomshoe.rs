@@ -369,8 +369,8 @@ pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
     GenericDirectShoe {
         value_picker: box vp,
         suit_pickers: sp.into_boxed_slice(),
-        initial_length: Some(52),
-        maximum_count_of_any_value: Some(4),
+        initial_length: None,
+        maximum_count_of_any_value: None,
     }
     //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
 }
