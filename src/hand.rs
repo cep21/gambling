@@ -23,7 +23,9 @@ pub struct BJHand {
 
 impl fmt::Show for BJHand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.cards)
+        write!(f, "{}|p={}|d={}|s={}",
+               self.cards, self.splits_done,
+               self.double_count, self.splits_to_solve)
     }
 }
 

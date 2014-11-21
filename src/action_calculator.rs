@@ -43,38 +43,41 @@ impl <'a>ActionCalculator<'a> {
     pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
-        match self.dbget(
-            &self.player_hand_hasher.hash_hand(rules, hand),
-            &self.deck_hasher.hash_deck(rules, d)) {
+        let v1 = self.player_hand_hasher.hash_hand(rules, hand);
+        let v2 = self.deck_hasher.hash_deck(rules, d);
+        match self.dbget(&v1, &v2) {
             Some(s) => return s,
             None => {}
         }
-        println!("hand={}", hand);
+//        println!("Checking expected value for hand={}", hand);
         let mut best_result: Option<f64>  = None;
         // TODO: Can I just do something like BJAction.variants ??
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
+//        let mut best_action = None;
         for &a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, a, rules) {
                 Some(r) => {
                     match best_result {
                         Some(b) => {
                             if b < r {
-                                best_result = Some(r)
+                                best_result = Some(r);
+//                                best_action = Some(a);
                             }
                         }
                         None => {
-                            best_result = Some(r)
+                            best_result = Some(r);
+//                            best_action = Some(a);
                         }
                     }
                 }
                 _ => {}
             }
         }
+        assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-        match self.dbstore(
-            &self.player_hand_hasher.hash_hand(rules, hand),
-            &self.deck_hasher.hash_deck(rules, d), to_return) {
+//        println!("Best action {} => {}", hand, best_action.unwrap())
+        match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
             }
@@ -105,7 +108,9 @@ impl <'a>ActionCalculator<'a> {
                                 panic!("Item should exist!");
                             }
                         };
+//                        let prev = format!("{}", hand);
                         hand.add_card(card_from_deck);
+//                        println!("H{} => {}", prev, hand);
                         let ev_with_value =
                             self.expected_value_best_action(
                                 hand,dealer_up_card, d, rules);
@@ -144,7 +149,9 @@ impl <'a>ActionCalculator<'a> {
                     false => Some(this_hands_value),
                     true => {
                         // Taking over 'hand' variable
+//                        let prev = format!("{}", hand);
                         let mut hand = hand.create_next_split_hand();
+//                        println!("S{} => {}", prev, hand);
                         Some(this_hands_value +
                              self.expected_value_best_action(
                                  &mut hand, dealer_up_card, d, rules))
@@ -307,22 +314,28 @@ mod tests {
     fn check_best_value_rules(dealer_up_card: &Value, player_cards: &Vec<Value>,
                               expected: f64, rules: &BJRules) {
         use shoe::randomshoe::new_infinite_shoe;
+        check_best_value_rules_deck(dealer_up_card, player_cards, expected,
+                                    rules,&mut new_infinite_shoe());
+    }
+
+    fn check_best_value_rules_deck(dealer_up_card: &Value, player_cards: &Vec<Value>,
+                              expected: f64, rules: &BJRules, shoe: &mut DirectShoe) {
         let mut a = ActionCalculator {
             player_hand_hasher: &PlayerHandHasher,
             dealer_hand_hasher: &DealerHandHasher,
             deck_hasher: &SuitlessDeckHasher,
             database: &mut InMemoryHashDatabase::new(),
         };
-        let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
         assert_eq!(
             (a.expected_value_best_action(
-                &mut BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
+                &mut BJHand::new_from_deck(shoe, player_cards).unwrap(),
                 &shoe.remove(dealer_up_card).unwrap(),
-                &mut shoe,
+                shoe,
                 rules) * expansion).round() as int,
             (expected * expansion) as int);
     }
+
 
     #[test]
     fn test_expected_infinite_deck() {
@@ -361,6 +374,19 @@ mod tests {
     fn test_expected_best_value_aa_10() {
         check_best_value(&value::TEN,   &vec![value::ACE, value::ACE], 0.179689);
     }
+
+    #[test]
+    //#[ignore]
+    fn test_expected_best_value_aa_2() {
+        check_best_value(&value::TWO,   &vec![value::ACE, value::ACE], 0.470641);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_expected_best_value_44_6() {
+        check_best_value(&value::SIX,   &vec![value::FOUR, value::FOUR], 0.151377);
+    }
+
 
     #[test]
     fn test_expected_best_value_s18_9() {
@@ -408,6 +434,63 @@ mod tests {
     #[test]
     fn test_expected_best_value_20_10() {
         check_value(&vec![value::TEN],   &vec![value::TEN, value::TEN]             ,  0.554538);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_expected_best_value_1d_16_10() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::TEN,
+            &vec![value::TEN, value::SIX],
+            -0.506929,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_10_9_vs_10() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::TEN,
+            &vec![value::TEN, value::NINE],
+            0.102517,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_10_3_vs_3() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::THREE,
+            &vec![value::TEN, value::THREE],
+            -0.265648,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_5_6_vs_6() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::SIX,
+            &vec![value::FIVE, value::SIX],
+            0.761392,
+            &rules,
+            &mut shoe);
     }
 
     #[bench]

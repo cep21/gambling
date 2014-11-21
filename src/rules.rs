@@ -23,7 +23,7 @@ impl BJRules {
       Default rules: noR, split-4, s17, Dany, no RsA, Single card on ace splits, DaS
       */
     pub fn new() -> BJRules {
-        BJRules::new_complex(false, 3, false, 1, false, false, true)
+        BJRules::new_complex(false, 4, false, 1, false, false, true)
     }
 
     pub fn new_complex(can_surrender: bool, split_limit: uint, hit_s17: bool,

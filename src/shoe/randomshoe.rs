@@ -346,17 +346,17 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
     }
 }
 
-pub fn new_random_shoe<'a>() -> GenericDirectShoe<'a> {
-    let vp = RandomDeckValuePicker::new(1);
+pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
+    let vp = RandomDeckValuePicker::new(num_decks);
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
     for _ in range (0, 13u) {
-        sp.push(box RandomDeckSuitPicker::new(1));
+        sp.push(box RandomDeckSuitPicker::new(num_decks));
     }
     GenericDirectShoe {
         value_picker: box vp,
         suit_pickers: sp.into_boxed_slice(),
-        initial_length: 52,
-        maximum_count_of_any_value: 4,
+        initial_length: num_decks * 52,
+        maximum_count_of_any_value: 4 * num_decks,
     }
 }
 
@@ -378,7 +378,7 @@ pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
 #[test]
 fn test_random() {
     use shoe::shoe::test_single_deck;
-    let mut shoe = new_random_shoe();
+    let mut shoe = new_random_shoe(1);
     println!("starting");
     test_single_deck(&mut shoe);
 }
