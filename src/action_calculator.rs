@@ -277,6 +277,9 @@ mod tests {
     use hand::BJHand;
     use std::num::Float;
     use cards::value;
+    use bjaction::BJAction;
+    use bjaction::BJAction::STAND;
+    use bjaction::BJAction::HIT;
     use rules::BJRules;
     use hand_hasher::DealerHandHasher;
     use hand_hasher::PlayerHandHasher;
@@ -334,6 +337,30 @@ mod tests {
                 shoe,
                 rules) * expansion).round() as int,
             (expected * expansion) as int);
+    }
+
+    fn check_best_value_rules_deck_action(dealer_up_card: &Value, player_cards: &Vec<Value>,
+                              expected: Option<f64>, rules: &BJRules, shoe: &mut DirectShoe,
+                              action: BJAction) {
+        let mut a = ActionCalculator {
+            player_hand_hasher: &PlayerHandHasher,
+            dealer_hand_hasher: &DealerHandHasher,
+            deck_hasher: &SuitlessDeckHasher,
+            database: &mut InMemoryHashDatabase::new(),
+        };
+        let expansion = 1000000.0f64;
+        let v =  a.expected_value(
+            &mut BJHand::new_from_deck(shoe, player_cards).unwrap(),
+            &shoe.remove(dealer_up_card).unwrap(),
+            shoe,
+            action,
+            rules);
+        match v {
+            Some(f) => assert_eq!(
+                (f * expansion).round() as int,
+                (expected.unwrap() * expansion) as int),
+            None => assert_eq!(None, expected)
+        }
     }
 
 
@@ -450,6 +477,37 @@ mod tests {
             &rules,
             &mut shoe);
     }
+
+    #[test]
+    fn test_expected_value_1d_16_10_stand() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck_action(
+            &value::TEN,
+            &vec![value::TEN, value::SIX],
+            Some(-0.542952),
+            &rules,
+            &mut shoe,
+            BJAction::STAND);
+    }
+
+    #[test]
+    fn test_expected_value_1d_16_10_hit() {
+        use shoe::randomshoe::new_random_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let mut shoe = new_random_shoe(1);
+        check_best_value_rules_deck_action(
+            &value::TEN,
+            &vec![value::KING, value::SIX],
+            Some(-0.506929),
+            &rules,
+            &mut shoe,
+            BJAction::HIT);
+    }
+
 
     #[test]
     fn test_expected_best_value_1d_10_9_vs_10() {
