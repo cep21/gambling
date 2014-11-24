@@ -257,13 +257,23 @@ impl <'a>ActionCalculator<'a> {
         match original_hand.splits_to_solve() > 0 {
             false => 0.0,
             true => {
+                let mut index = 0u;
                 for &c in original_hand.cards().iter() {
-                    d.insert(&c);
+                    index += 1;
+                    // We still consider the two cards in this hand as being
+                    // not in the shoe, we just don't consider the others
+                    if index > 1 {
+                        d.insert(&c);
+                    }
                 }
                 let mut hand = original_hand.create_next_split_hand();
                 let ret = self.expected_value_best_action(&mut hand, dealer_up_card, d, rules);
+                index = 0;
                 for &c in original_hand.cards().iter() {
-                    d.remove(c.value()).unwrap();
+                    index += 1;
+                    if index > 1 {
+                        d.remove(c.value()).unwrap();
+                    }
                 }
                 ret
             }
@@ -698,7 +708,7 @@ mod tests {
     }
 
     #[test]
-//    #[ignore]
+    #[ignore]
     fn test_expected_best_value_1d_88_vs_9() {
         use shoe::randomshoe::new_faceless_random_shoe;
         // S17
@@ -709,6 +719,21 @@ mod tests {
             &value::NINE,
             &vec![value::EIGHT, value::EIGHT],
             -0.401442,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_88_vs_9_sp1_nodas() {
+        use shoe::randomshoe::new_faceless_random_shoe;
+        // S17
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 1, false, 1, false, false, false);
+        let mut shoe = new_faceless_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::NINE,
+            &vec![value::EIGHT, value::EIGHT],
+            -0.429934,
             &rules,
             &mut shoe);
     }
