@@ -384,12 +384,12 @@ mod tests {
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
         assert_eq!(
+            (expected * expansion) as int,
             (a.expected_with_dealer(
                 &BJHand::new_from_deck(&mut shoe, player_cards).unwrap(),
                 &mut BJHand::new_from_deck(&mut shoe, dealer_cards).unwrap(),
                 &mut shoe,
-                &rules) * expansion).round() as int,
-            (expected * expansion) as int);
+                &rules) * expansion).round() as int);
     }
 
     fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>,
@@ -414,12 +414,12 @@ mod tests {
         };
         let expansion = 1000000.0f64;
         assert_eq!(
+            (expected * expansion) as int,
             (a.expected_value_best_action(
                 &mut BJHand::new_from_deck(shoe, player_cards).unwrap(),
                 &shoe.remove(dealer_up_card).unwrap(),
                 shoe,
-                rules) * expansion).round() as int,
-            (expected * expansion) as int);
+                rules) * expansion).round() as int);
     }
 
     fn check_best_value_rules_deck_action(dealer_up_card: &Value, player_cards: &Vec<Value>,
@@ -439,9 +439,9 @@ mod tests {
             rules);
         match v {
             Some(f) => assert_eq!(
-                (f * expansion).round() as int,
-                (expected.unwrap() * expansion) as int),
-            None => assert_eq!(None, expected)
+                (expected.unwrap() * expansion) as int,
+                (f * expansion).round() as int),
+            None => assert_eq!(expected, None)
         }
     }
 
@@ -727,7 +727,7 @@ mod tests {
     fn test_expected_best_value_1d_88_vs_9_sp1_nodas() {
         use shoe::randomshoe::new_faceless_random_shoe;
         // S17
-        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        // Don's book(page 403)
         let rules = BJRules::new_complex(false, 1, false, 1, false, false, false);
         let mut shoe = new_faceless_random_shoe(1);
         check_best_value_rules_deck(
