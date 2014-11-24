@@ -8,6 +8,7 @@ use bjaction::BJAction::SPLIT;
 use cards::card::Card;
 use cards::value::VALUES;
 use cards::value::ACE;
+use cards::value::Value;
 use cards::value::KING;
 use cards::value::QUEEN;
 use cards::value::JACK;
@@ -75,7 +76,7 @@ impl <'a>ActionCalculator<'a> {
         assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-        println!("Best action {} => {}: {}", hand, best_action.unwrap(), to_return)
+//        println!("Best action {} => {}: {}", hand, best_action.unwrap(), to_return)
         match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
@@ -86,64 +87,74 @@ impl <'a>ActionCalculator<'a> {
         }
     }
 
+    fn odds_of_value(&mut self, dealer_up_card: &Card,
+                      d: &mut DirectShoe,
+                      rules: &BJRules, v: Value) -> f64 {
+        use hand::score_for_value;
+        let count_of_val = d.count(&v);
+        if count_of_val == 0 {
+            return 0.0;
+        }
+        // Tricky: If the dealer is showing a TEN, then
+        //         you're more likely to get a ACE than
+        //         any other card because you know the
+        //         dealer doesn't have one of your aces
+        let (num_valid_down_cards, invalid_down_val) = {
+            match d.initial_length() {
+                Some(_) => {
+                    if rules.dealer_blackjack_after_hand() {
+                        (d.len(), None)
+                    } else {
+                        match score_for_value(dealer_up_card.value()) {
+                            10 => (d.len() - d.count(&ACE), Some(score_for_value(&ACE))),
+                            11 => (d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
+                               d.count(&KING), Some(score_for_value(&TEN))),
+                            _ => (d.len(), None)
+                        }
+                    }
+                },
+                // The second None here is KIND OF a lie ... oh well
+                None => (d.len(), None)
+            }
+        };
+        // Deck is [1,2, 2, 3, 3, 4, 4, 4]
+        //  Odds of a 3 (when you know the dealer doesn't have 4) are: 
+        //   (2/5) * (1/7) + (3/5) * (2/7)
+        // Odds of a 3 are odds of sum of:
+        //  (1) Dealer has three * odds of another three
+        //  (2) Dealer does not have three * odds of your three
+        match d.initial_length() {
+            None => count_of_val as f64 / d.len() as f64,
+            Some(_) =>
+                match invalid_down_val == Some(score_for_value(&v)) {
+                true =>
+                  count_of_val as f64 / (d.len() - 1) as f64,
+                false =>
+                   (count_of_val as f64 / num_valid_down_cards as f64) *
+                    ((count_of_val - 1) as f64 / (d.len() - 1) as f64)
+                    +
+                    ((num_valid_down_cards - count_of_val) as f64 /
+                     num_valid_down_cards as f64) *
+                    ((count_of_val) as f64 / (d.len() - 1) as f64),
+            }
+        }
+    }
+
     pub fn expected_value(&mut self, hand: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
-        use hand::score_for_value;
+        use std::fmt;
         if !rules.can_take_action(hand, action) {
             return None;
         }
         return match action {
             HIT => {
                 assert!(rules.can_hit(hand));
-                // Tricky: If the dealer is showing a TEN, then
-                //         you're more likely to get a ACE than
-                //         any other card because you know the
-                //         dealer doesn't have one of your aces
-                let (num_valid_down_cards, invalid_down_val) = {
-                    match d.initial_length() {
-                        Some(_) => {
-                            if rules.dealer_blackjack_after_hand() {
-                                (d.len(), None)
-                            } else {
-                                match score_for_value(dealer_up_card.value()) {
-                                    10 => (d.len() - d.count(&ACE), Some(score_for_value(&ACE))),
-                                    11 => (d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
-                                       d.count(&KING), Some(score_for_value(&TEN))),
-                                    _ => (d.len(), None)
-                                }
-                            }
-                        },
-                        // The second None here is KIND OF a lie ... oh well
-                        None => (d.len(), None)
-                    }
-                };
-//                println!("Valid up {} w/ {}  is {}", dealer_up_card, hand, num_valid_down_cards);
                 let mut final_result = 0.0;
+                let mut debug = String::new();
                 for &v in VALUES.iter() {
-                    let count_of_val = d.count(&v);
-                    if count_of_val > 0 {
-                        // Deck is [1,2, 2, 3, 3, 4, 4, 4]
-                        //  Odds of a 3 (when you know the dealer doesn't have 4) are: 
-                        //   (2/5) * (1/7) + (3/5) * (2/7)
-                        // Odds of a 3 are odds of sum of:
-                        //  (1) Dealer has three * odds of another three
-                        //  (2) Dealer does not have three * odds of your three
-                        let odds_of_value = match d.initial_length() {
-                            None => count_of_val as f64 / d.len() as f64,
-                            Some(_) =>
-                                match invalid_down_val == Some(score_for_value(&v)) {
-                                true =>
-                                  count_of_val as f64 / (d.len() - 1) as f64,
-                                false =>
-                                   (count_of_val as f64 / num_valid_down_cards as f64) *
-                                    ((count_of_val - 1) as f64 / (d.len() - 1) as f64)
-                                    +
-                                    ((num_valid_down_cards - count_of_val) as f64 /
-                                     num_valid_down_cards as f64) *
-                                    ((count_of_val) as f64 / (d.len() - 1) as f64),
-                            }
-                        };
+                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
+                    if odds_of_value != 0.0 {
                         let card_from_deck = match d.remove(&v) {
                             Some(c) => c,
                             None => {
@@ -157,10 +168,12 @@ impl <'a>ActionCalculator<'a> {
                             self.expected_value_best_action(
                                 hand,dealer_up_card, d, rules);
                         final_result += odds_of_value * ev_with_value;
+                        debug = debug + format_args!(fmt::format, "{}*{} +", odds_of_value, ev_with_value);
                         hand.remove_card(card_from_deck);
                         d.insert(&card_from_deck);
                     }
                 }
+                println!("H {} = {}", hand, debug);
                 Some(final_result)
             }
             STAND => {
@@ -187,45 +200,38 @@ impl <'a>ActionCalculator<'a> {
                 // dealer deals her own cards.  This logic is more like:
                 // We let the dealer resolve the first split, then pick cards
                 // for the second then let the dealer resolve the second split.
-                match hand.splits_to_solve() > 0 {
-                    false => Some(this_hands_value),
-                    true => {
-                        // Taking over 'hand' variable
-//                        let prev = format!("{}", hand);
-                        let mut hand = hand.create_next_split_hand();
-//                        println!("S{} => {}", prev, hand);
-                        Some(this_hands_value +
-                             self.expected_value_best_action(
-                                 &mut hand, dealer_up_card, d, rules))
-                    }
-                }
+                Some(this_hands_value + self.finish_splits(hand, dealer_up_card, d, rules))
             }
             DOUBLE => {
                 assert!(rules.can_double(hand));
                 let mut final_result = 0.0;
+                // Note: We support DaS, but something like SaD wouldn't work
+                //       with this flow.
+                let mut current_hand = hand.without_split_information();
                 for &v in VALUES.iter() {
-                    let count_of_val = d.count(&v);
-                    if count_of_val > 0 {
-                        let odds_of_value =
-                            count_of_val as f64 / d.len() as f64;
+                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
+                    if odds_of_value != 0.0 {
                         let card_from_deck = match d.remove(&v) {
                             Some(c) => c,
                             None => {
                                 panic!("Expect a value!");
                             }
                         };
-                        hand.add_card(card_from_deck);
-                        hand.add_double_count();
+                        current_hand.add_card(card_from_deck);
+                        current_hand.add_double_count();
+                        // Expected value is twice resolving this hand, PLUS resolving
+                        // any left over splits...  it is *NOT* twice resolving this
+                        // hand plus a card since we carry on the card inside the hand
                         let ev_with_value =
                             2.0 * self.expected_value_best_action(
-                                hand, dealer_up_card, d, rules);
+                                &mut current_hand, dealer_up_card, d, rules);
                         final_result += odds_of_value * ev_with_value;
-                        hand.remove_card(card_from_deck);
-                        hand.subtract_double_count();
+                        current_hand.remove_card(card_from_deck);
+                        current_hand.subtract_double_count();
                         d.insert(&card_from_deck);
                     }
                 }
-                Some(final_result)
+                Some(final_result + self.finish_splits(hand, dealer_up_card, d, rules))
             }
             SPLIT => {
                 assert!(rules.can_split(hand));
@@ -238,8 +244,28 @@ impl <'a>ActionCalculator<'a> {
                 Some(final_result)
             }
             SURRENDER => {
+                // Note: will not work if you can surrender after a split ...
                 assert!(rules.can_surrender(hand));
-                Some(-0.5)
+                // Note: Allows surrender after split
+                Some(-0.5 + self.finish_splits(hand, dealer_up_card, d, rules))
+            }
+        }
+    }
+
+    fn finish_splits(&mut self, original_hand: &BJHand, dealer_up_card: &Card,
+                      d: &mut DirectShoe, rules: &BJRules) -> f64 {
+        match original_hand.splits_to_solve() > 0 {
+            false => 0.0,
+            true => {
+                for &c in original_hand.cards().iter() {
+                    d.insert(&c);
+                }
+                let mut hand = original_hand.create_next_split_hand();
+                let ret = self.expected_value_best_action(&mut hand, dealer_up_card, d, rules);
+                for &c in original_hand.cards().iter() {
+                    d.remove(c.value()).unwrap();
+                }
+                ret
             }
         }
     }
@@ -437,13 +463,16 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_expected_best_value_88_10() {
         check_best_value(&value::TEN,   &vec![value::EIGHT, value::EIGHT], -0.480686);
     }
 
     #[test]
-//    #[ignore]
+    fn test_expected_best_value_88_9() {
+        check_best_value(&value::NINE,   &vec![value::EIGHT, value::EIGHT], -0.387228);
+    }
+
+    #[test]
     fn test_expected_best_value_11_a() {
         check_best_value(&value::ACE,   &vec![value::EIGHT, value::THREE], 0.143001);
     }
@@ -464,7 +493,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_expected_best_value_44_6() {
         check_best_value(&value::SIX,   &vec![value::FOUR, value::FOUR], 0.151377);
     }
@@ -522,7 +550,7 @@ mod tests {
     fn test_expected_best_value_1d_16_10() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
         check_best_value_rules_deck(
             &value::TEN,
@@ -536,7 +564,7 @@ mod tests {
     fn test_expected_value_1d_16_10_stand() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
         check_best_value_rules_deck_action(
             &value::TEN,
@@ -551,7 +579,7 @@ mod tests {
     fn test_expected_value_1d_16_10_hit() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
         // Tricky: You know the dealer doesn't have an ace, so you're more likely
         //         than other random cards to get an ace
@@ -568,7 +596,7 @@ mod tests {
     fn test_expected_value_1d_16_9_hit() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
         check_best_value_rules_deck_action(
             &value::NINE,
@@ -580,10 +608,56 @@ mod tests {
     }
 
     #[test]
+    fn test_expected_value_split_10_vs_9() {
+        use shoe::randomshoe::new_infinite_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
+        let mut shoe = new_infinite_shoe();
+        check_best_value_rules_deck_action(
+            &value::NINE,
+            &vec![value::TEN, value::TEN],
+            // Differs from the wizard: He assumes you keep splitting those tens
+            Some(0.233059),
+            &rules,
+            &mut shoe,
+            BJAction::SPLIT);
+    }
+
+    #[test]
+    fn test_expected_value_split_99_vs_9() {
+        use shoe::randomshoe::new_infinite_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
+        let mut shoe = new_infinite_shoe();
+        check_best_value_rules_deck_action(
+            &value::NINE,
+            &vec![value::NINE, value::NINE],
+            Some(-0.078010),
+            &rules,
+            &mut shoe,
+            BJAction::SPLIT);
+    }
+
+    #[test]
+    fn test_expected_value_hit_54_vs_9() {
+        use shoe::randomshoe::new_infinite_shoe;
+        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
+        let mut shoe = new_infinite_shoe();
+        check_best_value_rules_deck_action(
+            &value::NINE,
+            &vec![value::FIVE, value::FOUR],
+            Some(-0.052178),
+            &rules,
+            &mut shoe,
+            BJAction::HIT);
+    }
+
+    #[test]
     fn test_expected_best_value_1d_10_9_vs_10() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
         check_best_value_rules_deck(
             &value::TEN,
@@ -597,7 +671,7 @@ mod tests {
     fn test_expected_best_value_1d_10_3_vs_3() {
         use shoe::randomshoe::new_random_shoe;
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_random_shoe(1);
         check_best_value_rules_deck(
             &value::THREE,
@@ -608,30 +682,33 @@ mod tests {
     }
 
     #[test]
-    fn test_expected_best_value_1d_5_6_vs_6() {
+    #[ignore]
+    fn test_expected_best_value_1d_88_vs_10() {
         use shoe::randomshoe::new_faceless_random_shoe;
+        // S17
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 4, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_faceless_random_shoe(1);
         check_best_value_rules_deck(
-            &value::SIX,
-            &vec![value::FIVE, value::SIX],
-            0.761392,
+            &value::TEN,
+            &vec![value::EIGHT, value::EIGHT],
+            -0.446436,
             &rules,
             &mut shoe);
     }
 
     #[test]
-    #[ignore]
-    fn test_expected_best_value_1d_88_vs_10() {
+//    #[ignore]
+    fn test_expected_best_value_1d_88_vs_9() {
         use shoe::randomshoe::new_faceless_random_shoe;
+        // S17
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 1, false, 1, false, false, true);
+        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
         let mut shoe = new_faceless_random_shoe(1);
         check_best_value_rules_deck(
-            &value::TEN,
+            &value::NINE,
             &vec![value::EIGHT, value::EIGHT],
-            0.761392,
+            -0.401442,
             &rules,
             &mut shoe);
     }

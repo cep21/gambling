@@ -77,6 +77,13 @@ impl BJHand {
         ret
     }
 
+    pub fn without_split_information(&self) -> BJHand {
+        let mut ret = BJHand::new_with_cards(&self.cards);
+        // For redoubles
+        ret.double_count = self.double_count;
+        ret
+    }
+
     pub fn double_count(&self) -> uint {
         self.double_count
     }

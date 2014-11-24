@@ -84,6 +84,7 @@ impl BJRules {
         }
         h.split_number() < self.split_limit 
             && h.len() == 2
+            && h.double_count() == 0
             // Can you split J/Q or can you only split J/J
             && h.cards()[0].value() == h.cards()[1].value()
     }
