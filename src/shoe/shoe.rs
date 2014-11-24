@@ -1,4 +1,5 @@
 use cards::value::Value;
+use cards::value::VALUES;
 use cards::card::Card;
 
 pub trait DirectShoe {
@@ -12,6 +13,23 @@ pub trait DirectShoe {
     // No count means the deck has no initial length: is infinite
     fn maximum_count_of_any_value(&self) -> Option<uint>;
 }
+
+pub fn fmt(d: &DirectShoe) -> String {
+    let mut s = String::new();
+    for &v in VALUES.iter() {
+        s = s + d.count(&v).to_string() + v.desc() + " ";
+    }
+    s.to_string()
+}
+
+/*
+ * TODO: fmt::Show throws a compile exception
+impl <'a>fmt::Show for DirectShoe + 'a {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "hello")
+    }
+}
+*/
 
 // TODO: define only for test?
 #[cfg(test)]

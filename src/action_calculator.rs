@@ -76,7 +76,7 @@ impl <'a>ActionCalculator<'a> {
         assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-//        println!("Best action {} => {}: {}", hand, best_action.unwrap(), to_return)
+        println!("Best action {} => {}: {}", hand, best_action.unwrap(), to_return)
         match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
@@ -144,6 +144,7 @@ impl <'a>ActionCalculator<'a> {
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
         use std::fmt;
+        use shoe::shoe::fmt;
         if !rules.can_take_action(hand, action) {
             return None;
         }
@@ -173,7 +174,7 @@ impl <'a>ActionCalculator<'a> {
                         d.insert(&card_from_deck);
                     }
                 }
-                println!("H {} = {}", hand, debug);
+//                println!("H {} = {}", hand, debug);
                 Some(final_result)
             }
             STAND => {
@@ -188,6 +189,7 @@ impl <'a>ActionCalculator<'a> {
                         } else {
                             let mut dealer_hand = BJHand::new();
                             dealer_hand.add_card(*dealer_up_card);
+                            println!("checking against dealer hand {} w/ {}", hand, fmt(d));
                             self.expected_with_dealer(hand,
                                                       &mut dealer_hand,
                                                       d, rules)
@@ -254,9 +256,11 @@ impl <'a>ActionCalculator<'a> {
 
     fn finish_splits(&mut self, original_hand: &BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, rules: &BJRules) -> f64 {
+        use shoe::shoe::fmt;
         match original_hand.splits_to_solve() > 0 {
             false => 0.0,
             true => {
+//                println!("finishing {} w/ {}", original_hand, fmt(d));
                 let mut index = 0u;
                 for &c in original_hand.cards().iter() {
                     index += 1;
@@ -728,6 +732,8 @@ mod tests {
         use shoe::randomshoe::new_faceless_random_shoe;
         // S17
         // Don's book(page 403)
+        // Note, my code says not to hit 8,2,2,2,2 vs 9 but his book says HIT b/c it
+        // assumes it's 16 vs 9.  That's why my expected value can be higher than his
         let rules = BJRules::new_complex(false, 1, false, 1, false, false, false);
         let mut shoe = new_faceless_random_shoe(1);
         check_best_value_rules_deck(
