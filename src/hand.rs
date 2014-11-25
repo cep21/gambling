@@ -46,6 +46,17 @@ impl BJHand {
         return self.ace_count > 0 && self.score + 10 <= 21;
     }
 
+    pub fn simple_desc(&self) -> String {
+        let mut s = String::new();
+        if self.is_soft() {
+            s = s + "S";
+        } else {
+            s = s + "H";
+        }
+        s = s + self.score().to_string();
+        return s;
+    }
+
     pub fn split(&mut self) {
         assert_eq!(2, self.cards.len());
         assert_eq!(self.cards[0].value(), self.cards[1].value());

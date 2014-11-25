@@ -13,6 +13,7 @@ use cards::value::KING;
 use cards::value::QUEEN;
 use cards::value::JACK;
 use cards::value::TEN;
+use cards::value::NINE;
 use rules::BJRules;
 use shoe::shoe::DirectShoe;
 use shoe::randomshoe::SuitPicker;
@@ -55,6 +56,12 @@ impl <'a>ActionCalculator<'a> {
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
         let mut best_action = None;
         for &a in actions.iter() {
+            if hand.score() < 17 && dealer_up_card.value() == &NINE && rules.can_hit(hand) && a == STAND {
+                    continue
+            }
+            if hand.score() > 16 && !hand.is_soft() && dealer_up_card.value() == &NINE && rules.can_stand(hand) && a == HIT {
+                    continue
+            }
             match self.expected_value(hand, dealer_up_card, d, a, rules) {
                 Some(r) => {
                     match best_result {
@@ -76,7 +83,7 @@ impl <'a>ActionCalculator<'a> {
         assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-        println!("Best action {} => {}: {}", hand, best_action.unwrap(), to_return)
+        println!("Best action {} => {}: {}", hand.simple_desc(), best_action.unwrap(), to_return)
         match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
@@ -189,7 +196,7 @@ impl <'a>ActionCalculator<'a> {
                         } else {
                             let mut dealer_hand = BJHand::new();
                             dealer_hand.add_card(*dealer_up_card);
-                            println!("checking against dealer hand {} w/ {}", hand, fmt(d));
+//                            println!("checking against dealer hand {} w/ {}", hand, fmt(d));
                             self.expected_with_dealer(hand,
                                                       &mut dealer_hand,
                                                       d, rules)
@@ -246,7 +253,6 @@ impl <'a>ActionCalculator<'a> {
                 Some(final_result)
             }
             SURRENDER => {
-                // Note: will not work if you can surrender after a split ...
                 assert!(rules.can_surrender(hand));
                 // Note: Allows surrender after split
                 Some(-0.5 + self.finish_splits(hand, dealer_up_card, d, rules))
@@ -264,8 +270,7 @@ impl <'a>ActionCalculator<'a> {
                 let mut index = 0u;
                 for &c in original_hand.cards().iter() {
                     index += 1;
-                    // We still consider the two cards in this hand as being
-                    // not in the shoe, we just don't consider the others
+                    // We still consider the card that made the split
                     if index > 1 {
                         d.insert(&c);
                     }
@@ -306,23 +311,17 @@ impl <'a>ActionCalculator<'a> {
             // Limit the number of valid cards on the first hand if
             // you already nkow the dealer doesn't have blackjack
             let number_of_valid_cards = {
-
-//                match d.initial_length() {
-//                    Some(_) =>  {
-                        if rules.dealer_blackjack_after_hand() ||
-                            dealer_hand.len() != 1 {
-                                d.len()
-                        } else {
-                            match dealer_hand.score() {
-                                10 => d.len() - d.count(&ACE),
-                                11 => d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
-                                   d.count(&KING),
-                                _ => d.len()
-                            }
-                        }
-//                    },
-//                    None => d.len(),
-//                }
+                if rules.dealer_blackjack_after_hand() ||
+                    dealer_hand.len() != 1 {
+                        d.len()
+                } else {
+                    match dealer_hand.score() {
+                        10 => d.len() - d.count(&ACE),
+                        11 => d.len() - d.count(&TEN) - d.count(&JACK) - d.count(&QUEEN) -
+                           d.count(&KING),
+                        _ => d.len()
+                    }
+                }
             };
             for &v in VALUES.iter() {
                 let count_of_val = d.count(&v);
@@ -740,6 +739,40 @@ mod tests {
             &value::NINE,
             &vec![value::EIGHT, value::EIGHT],
             -0.429934,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_88_vs_9_sp1_das() {
+        use shoe::randomshoe::new_faceless_random_shoe;
+        // S17
+        // Don's book(page 403)
+        // Note, my code says not to hit 8,2,2,2,2 vs 9 but his book says HIT b/c it
+        // assumes it's 16 vs 9.  That's why my expected value can be higher than his
+        let rules = BJRules::new_complex(false, 1, false, 1, false, false, true);
+        let mut shoe = new_faceless_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::NINE,
+            &vec![value::EIGHT, value::EIGHT],
+            -0.406325,
+            &rules,
+            &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_88_vs_9_sp2_nodas() {
+        use shoe::randomshoe::new_faceless_random_shoe;
+        // S17
+        // Don's book(page 403)
+        // Note, my code says not to hit 8,2,2,2,2 vs 9 but his book says HIT b/c it
+        // assumes it's 16 vs 9.  That's why my expected value can be higher than his
+        let rules = BJRules::new_complex(false, 2, false, 1, false, false, false);
+        let mut shoe = new_faceless_random_shoe(1);
+        check_best_value_rules_deck(
+            &value::NINE,
+            &vec![value::EIGHT, value::EIGHT],
+            -0.427106,
             &rules,
             &mut shoe);
     }
