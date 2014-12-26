@@ -5,14 +5,14 @@ use shoe::shoe::DirectShoe;
 
 pub struct CardShoeTracker<'a> {
     counts: [[uint, ..4], ..13],
-    wrapping: &'a mut DirectShoe + 'a,
+    wrapping: &'a mut (DirectShoe + 'a),
 }
 
 impl <'a>DirectShoe for CardShoeTracker<'a> {
     fn pop(&mut self) -> Option<Card> {
         let r = self.wrapping.pop();
         match r {
-            Some(r) => self.counts[r.value().index()][r.suit().index()] += 1,
+            Some(ref r) => self.counts[r.value().index()][r.suit().index()] += 1,
             None => (),
         };
         return r;
@@ -56,8 +56,8 @@ impl <'a>CardShoeTracker<'a> {
     }
     pub fn seen_cards(&self) -> uint {
         let mut ret = 0;
-        for &v in value::VALUES.iter() {
-            ret += self.count_value(v);
+        for v in value::VALUES.iter() {
+            ret += self.count_value((*v).clone());
         }
         return ret;
     }

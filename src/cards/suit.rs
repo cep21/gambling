@@ -1,6 +1,7 @@
 use cards::color;
 use std::fmt;
 
+#[deriving(Clone, Copy)]
 pub struct Suit {
     desc: &'static str,
     c: &'static color::Color,

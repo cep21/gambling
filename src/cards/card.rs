@@ -3,6 +3,7 @@ use cards::value::Value;
 use std::fmt;
 
 // Can I pass a ref?  Or pointer?
+#[deriving(Clone, Copy)]
 pub struct Card {
     v: Value,
     s: Suit,

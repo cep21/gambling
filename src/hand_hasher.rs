@@ -46,21 +46,23 @@ fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
     // TODO: This could be a lot more efficient ...
     let mut val: BigUint = Zero::zero();
     let mut bits_required: BigUint = Zero::zero();
-    for &i in ranges.iter() {
+    for i in ranges.iter() {
         val = val * i.max_value.to_biguint().unwrap();
         val = val + i.current_value.to_biguint().unwrap();
         bits_required = bits_required * i.max_value.to_biguint().unwrap() +
             (i.max_value - 1).to_biguint().unwrap();
+        println!("{}", val);
     }
-    let mut bv = Bitv::with_capacity(bits_required.bits(), false);
-//    println!("val={}, bits_required={}", val, bits_required.bits());
+    let mut bv = Bitv::from_elem(bits_required.bits(), false);
+    //println!("val={}, bits_required={}", val, bits_required.bits());
     let mut current_bit = 0u;
     while val > 0u.to_biguint().unwrap() {
-        bv.set(current_bit, val % 2u.to_biguint().unwrap() == 1u.to_biguint().unwrap());
+        bv.set(current_bit, val.clone() % 2u.to_biguint().unwrap() == 1u.to_biguint().unwrap());
         current_bit += 1;
-        val = val / 2u.to_biguint().unwrap();
+        let val2 = val / 2u.to_biguint().unwrap();
+        val = val2;
     }
-//    println!("bv={}", bv);
+    //println!("bv={}", bv);
     return bv.to_bytes();
 }
 
@@ -255,31 +257,31 @@ mod tests {
     }
 
 
-    fn ensure_equal_values(hasher: &HandHasher, rules: BJRules, h1: Vec<Value>, h2: Vec<Value>) {
+    fn ensure_equal_values(hasher: &HandHasher, rules: &BJRules, h1: Vec<Value>, h2: Vec<Value>) {
         let mut shoe = new_infinite_shoe();
         println!("Checking {} vs {}", h1, h2);
 
         assert_eq!(
-            hasher.hash_hand(&rules,
+            hasher.hash_hand(rules,
                              &BJHand::new_from_deck(&mut shoe, &h1).unwrap()),
-            hasher.hash_hand(&rules,
+            hasher.hash_hand(rules,
                              &BJHand::new_from_deck(&mut shoe, &h2).unwrap()));
     }
 
-    fn ensure_not_equal_values(hasher: &HandHasher, rules: BJRules, h1: Vec<Value>, h2: Vec<Value>) {
+    fn ensure_not_equal_values(hasher: &HandHasher, rules: &BJRules, h1: Vec<Value>, h2: Vec<Value>) {
         let mut shoe = new_infinite_shoe();
         println!("Checking {} vs {}", h1, h2);
 
         assert!(
-            hasher.hash_hand(&rules,
+            hasher.hash_hand(rules,
                              &BJHand::new_from_deck(&mut shoe, &h1).unwrap()) !=
-            hasher.hash_hand(&rules,
+            hasher.hash_hand(rules,
                              &BJHand::new_from_deck(&mut shoe, &h2).unwrap()));
     }
 
     #[test]
     fn test_dealer_hash() {
-        let mut rules = BJRules::new();
+        let rules = &BJRules::new();
         let hasher = &DealerHandHasher;
 
         ensure_equal_values(
@@ -313,23 +315,23 @@ mod tests {
             vec![value::ACE, value::THREE],
             vec![value::TEN, value::FOUR]);
 
-        rules = BJRules::new_complex(false, 4, true, 1, false, false, false);
+        let rules2 = &BJRules::new_complex(false, 4, true, 1, false, false, false);
 
         ensure_not_equal_values(
             hasher,
-            rules,
+            rules2,
             vec![value::ACE, value::SIX],
             vec![value::TEN, value::SEVEN]);
         ensure_equal_values(
             hasher,
-            rules,
+            rules2,
             vec![value::ACE, value::SEVEN],
             vec![value::TEN, value::EIGHT]);
     }
 
     #[test]
     fn test_player_hash() {
-        let mut rules = BJRules::new();
+        let rules = &BJRules::new();
         let hasher = &PlayerHandHasher;
 
         ensure_not_equal_values(
@@ -366,10 +368,10 @@ mod tests {
             vec![value::EIGHT, value::TEN]);
 
         // No surrender/split or double, so these two hands are the same
-        rules = BJRules::new_complex(false, 0, true, 0, false, false, false);
+        let rules2 = &BJRules::new_complex(false, 0, true, 0, false, false, false);
         ensure_equal_values(
             hasher,
-            rules,
+            rules2,
             vec![value::TEN, value::TWO, value::TWO],
             vec![value::FOUR, value::TEN]);
 

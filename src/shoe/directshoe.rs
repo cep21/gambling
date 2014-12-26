@@ -18,7 +18,7 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
     }
     fn count(&self, v: &value::Value) -> uint {
         let mut r = 0;
-        for &c in self.cards.iter() {
+        for c in self.cards.iter() {
             if c.value().index() == v.index() {
                 r += 1;
             }
@@ -34,7 +34,7 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
         return None;
     }
     fn insert(&mut self, v: &Card) {
-        self.cards.push(*v);
+        self.cards.push((*v).clone());
     }
     fn initial_length(&self) -> Option<uint> {
         self.initial_length

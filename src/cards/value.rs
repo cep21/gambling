@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[deriving(Clone, Copy)]
 pub struct Value {
     desc: &'static str,
     i: uint,

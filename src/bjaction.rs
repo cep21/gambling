@@ -1,5 +1,5 @@
 use std::fmt;
-#[deriving(PartialEq, PartialOrd, Clone, Ord, Eq, Hash)]
+#[deriving(PartialEq, Copy, PartialOrd, Clone, Ord, Eq, Hash)]
 pub enum BJAction {
     HIT,
     STAND,

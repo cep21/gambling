@@ -53,16 +53,16 @@ impl BJHand {
         } else {
             s = s + "H";
         }
-        s = s + self.score().to_string();
+        s.push_str(self.score().to_string().as_slice());
         return s;
     }
 
     pub fn split(&mut self) {
         assert_eq!(2, self.cards.len());
         assert_eq!(self.cards[0].value(), self.cards[1].value());
-        self.splits_to_solve.push(self.cards[1]);
-        let card_to_remove = self.cards[1];
-        self.remove_card(card_to_remove);
+        let card_to_remove = self.cards[1].clone();
+        self.splits_to_solve.push(card_to_remove.clone());
+        self.remove_card(&card_to_remove);
     }
 
     pub fn unsplit(&mut self) {
@@ -80,8 +80,8 @@ impl BJHand {
         ret.splits_done = self.splits_done + 1;
         // TODO: This could be more efficient.  push_all not working right,
         //       and can add one at a time.  Also, can I use a ref here?
-        for &i in self.splits_to_solve.iter() {
-            ret.splits_to_solve.push(i);
+        for i in self.splits_to_solve.iter() {
+            ret.splits_to_solve.push(i.clone());
         }
         let card_to_add = ret.splits_to_solve.pop().unwrap();
         ret.add_card(card_to_add);
@@ -135,7 +135,7 @@ impl BJHand {
         self
     }
 
-    pub fn remove_card(&mut self, card: Card) {
+    pub fn remove_card(&mut self, card: &Card) {
         assert!(self.score >= score_for_value(card.value()));
         assert!(self.num_cards >= 1);
         self.score -= score_for_value(card.value());
@@ -146,8 +146,15 @@ impl BJHand {
         }
         // We assume it's most likely you'll remove a card at the end
         for i in range(0, self.cards.len()).rev() {
-            let c = self.cards[i];
-            if c.suit().index() == card.suit().index() && c.value().index() == card.value().index() {
+            let should_remove = {
+                let ref c = self.cards[i];
+                if c.suit().index() == card.suit().index() && c.value().index() == card.value().index() {
+                    true
+                } else {
+                    false
+                }
+            };
+            if should_remove {
                 self.cards.swap_remove(i);
                 return;
             }
@@ -169,16 +176,16 @@ impl BJHand {
 
     pub fn new_with_cards(cards: &Vec<Card>) -> BJHand {
         let mut h = BJHand::new();
-        for &c in cards.iter() {
-            h.add_card(c);
+        for c in cards.iter() {
+            h.add_card((*c).clone());
         }
         return h;
     }
 
     pub fn new_from_deck(deck: &mut DirectShoe, values: &Vec<Value>) -> Option<BJHand> {
         let mut h = BJHand::new();
-        for &v in values.iter() {
-            match deck.remove(&v) {
+        for v in values.iter() {
+            match deck.remove(v) {
                 Some(c) => {
                     h.add_card(c);
                 }

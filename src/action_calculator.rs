@@ -22,9 +22,9 @@ use hand_hasher::DeckHasher;
 use hash_database::HashDatabase;
 
 pub struct ActionCalculator<'a> {
-    player_hand_hasher: &'a HandHasher + 'a,
-    deck_hasher: &'a DeckHasher + 'a,
-    database: &'a mut HashDatabase + 'a,
+    player_hand_hasher: &'a (HandHasher + 'a),
+    deck_hasher: &'a (DeckHasher + 'a),
+    database: &'a mut (HashDatabase + 'a),
 }
 
 impl <'a>ActionCalculator<'a> {
@@ -55,15 +55,15 @@ impl <'a>ActionCalculator<'a> {
         // TODO: Can I just do something like BJAction.variants ??
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
         let mut best_action = None;
-        for &a in actions.iter() {
+        for a in actions.iter() {
             // TODO: This is temp.  Remove later
-            if hand.score() < 17 && dealer_up_card.value() == &NINE && rules.can_hit(hand) && a == STAND {
+            if hand.score() < 17 && dealer_up_card.value() == &NINE && rules.can_hit(hand) && *a == STAND {
                     continue
             }
-            if hand.score() > 16 && !hand.is_soft() && dealer_up_card.value() == &NINE && rules.can_stand(hand) && a == HIT {
+            if hand.score() > 16 && !hand.is_soft() && dealer_up_card.value() == &NINE && rules.can_stand(hand) && *a == HIT {
                     continue
             }
-            match self.expected_value(hand, dealer_up_card, d, a, rules) {
+            match self.expected_value(hand, dealer_up_card, d, (*a).clone(), rules) {
                 Some(r) => {
                     match best_result {
                         Some(b) => {
@@ -84,7 +84,7 @@ impl <'a>ActionCalculator<'a> {
         assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-        println!("Best action {} => {}: {}", hand.simple_desc(), best_action.unwrap(), to_return)
+        println!("Best action {} => {}: {}", hand.simple_desc(), best_action.unwrap(), to_return);
         match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
@@ -161,10 +161,10 @@ impl <'a>ActionCalculator<'a> {
                 assert!(rules.can_hit(hand));
                 let mut final_result = 0.0;
                 let mut debug = String::new();
-                for &v in VALUES.iter() {
-                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
+                for v in VALUES.iter() {
+                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, (*v).clone());
                     if odds_of_value != 0.0 {
-                        let card_from_deck = match d.remove(&v) {
+                        let card_from_deck = match d.remove(v) {
                             Some(c) => c,
                             None => {
                                 panic!("Item should exist!");
@@ -177,8 +177,8 @@ impl <'a>ActionCalculator<'a> {
                             self.expected_value_best_action(
                                 hand,dealer_up_card, d, rules);
                         final_result += odds_of_value * ev_with_value;
-                        debug = debug + format_args!(fmt::format, "{}*{} +", odds_of_value, ev_with_value);
-                        hand.remove_card(card_from_deck);
+                        debug = debug + format_args!(fmt::format, "{}*{} +", odds_of_value, ev_with_value).as_slice();
+                        hand.remove_card(&card_from_deck);
                         d.insert(&card_from_deck);
                     }
                 }
@@ -196,7 +196,7 @@ impl <'a>ActionCalculator<'a> {
                             -1.0
                         } else {
                             let mut dealer_hand = BJHand::new();
-                            dealer_hand.add_card(*dealer_up_card);
+                            dealer_hand.add_card((*dealer_up_card).clone());
 //                            println!("checking against dealer hand {} w/ {}", hand, fmt(d));
                             self.expected_with_dealer(hand,
                                                       &mut dealer_hand,
@@ -218,10 +218,10 @@ impl <'a>ActionCalculator<'a> {
                 // Note: We support DaS, but something like SaD wouldn't work
                 //       with this flow.
                 let mut current_hand = hand.without_split_information();
-                for &v in VALUES.iter() {
-                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
+                for v in VALUES.iter() {
+                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, (*v).clone());
                     if odds_of_value != 0.0 {
-                        let card_from_deck = match d.remove(&v) {
+                        let card_from_deck = match d.remove(v) {
                             Some(c) => c,
                             None => {
                                 panic!("Expect a value!");
@@ -236,7 +236,7 @@ impl <'a>ActionCalculator<'a> {
                             2.0 * self.expected_value_best_action(
                                 &mut current_hand, dealer_up_card, d, rules);
                         final_result += odds_of_value * ev_with_value;
-                        current_hand.remove_card(card_from_deck);
+                        current_hand.remove_card(&card_from_deck);
                         current_hand.subtract_double_count();
                         d.insert(&card_from_deck);
                     }
@@ -347,7 +347,7 @@ impl <'a>ActionCalculator<'a> {
                         final_result += odds_of_value * ev_with_value;
                     }
 
-                    dealer_hand.remove_card(card_from_deck);
+                    dealer_hand.remove_card(&card_from_deck);
                     d.insert(&card_from_deck);
                 }
             }

@@ -16,8 +16,10 @@ pub trait DirectShoe {
 
 pub fn fmt(d: &DirectShoe) -> String {
     let mut s = String::new();
-    for &v in VALUES.iter() {
-        s = s + d.count(&v).to_string() + v.desc() + " ";
+    for v in VALUES.iter() {
+        s.push_str(d.count(v).to_string().as_slice());
+        s.push_str(v.desc());
+        s.push_str(" ");
     }
     s.to_string()
 }
