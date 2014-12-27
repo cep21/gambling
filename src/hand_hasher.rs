@@ -22,6 +22,7 @@ pub trait DeckHasher {
     fn hash_deck(&self, rules: &BJRules, shoe: &DirectShoe) -> Vec<u8>;
 }
 
+#[deriving(Copy)]
 pub struct DealerHandHasher;
 
 struct HashRange {
@@ -92,6 +93,7 @@ impl HandHasher for DealerHandHasher {
     }
 }
 
+#[deriving(Copy)]
 pub struct PlayerHandHasher;
 
 impl PlayerHandHasher {
@@ -164,6 +166,7 @@ impl HandHasher for PlayerHandHasher {
     }
 }
 
+#[deriving(Copy)]
 pub struct SuitlessDeckHasher;
 
 /**

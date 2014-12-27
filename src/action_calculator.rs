@@ -63,7 +63,7 @@ impl <'a>ActionCalculator<'a> {
             if hand.score() > 16 && !hand.is_soft() && dealer_up_card.value() == &NINE && rules.can_stand(hand) && *a == HIT {
                     continue
             }
-            match self.expected_value(hand, dealer_up_card, d, (*a).clone(), rules) {
+            match self.expected_value(hand, dealer_up_card, d, *a, rules) {
                 Some(r) => {
                     match best_result {
                         Some(b) => {
@@ -97,9 +97,9 @@ impl <'a>ActionCalculator<'a> {
 
     fn odds_of_value(&mut self, dealer_up_card: &Card,
                       d: &mut DirectShoe,
-                      rules: &BJRules, v: Value) -> f64 {
+                      rules: &BJRules, v: &Value) -> f64 {
         use hand::score_for_value;
-        let count_of_val = d.count(&v);
+        let count_of_val = d.count(v);
         if count_of_val == 0 {
             return 0.0;
         }
@@ -134,7 +134,7 @@ impl <'a>ActionCalculator<'a> {
         match d.initial_length() {
             None => count_of_val as f64 / d.len() as f64,
             Some(_) =>
-                match invalid_down_val == Some(score_for_value(&v)) {
+                match invalid_down_val == Some(score_for_value(v)) {
                 true =>
                   count_of_val as f64 / (d.len() - 1) as f64,
                 false =>
@@ -152,7 +152,6 @@ impl <'a>ActionCalculator<'a> {
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
         use std::fmt;
-        use shoe::shoe::fmt;
         if !rules.can_take_action(hand, action) {
             return None;
         }
@@ -162,7 +161,7 @@ impl <'a>ActionCalculator<'a> {
                 let mut final_result = 0.0;
                 let mut debug = String::new();
                 for v in VALUES.iter() {
-                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, (*v).clone());
+                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
                     if odds_of_value != 0.0 {
                         let card_from_deck = match d.remove(v) {
                             Some(c) => c,
@@ -171,7 +170,7 @@ impl <'a>ActionCalculator<'a> {
                             }
                         };
 //                        let prev = format!("{}", hand);
-                        hand.add_card(card_from_deck);
+                        hand.add_card(&card_from_deck);
 //                        println!("H{} => {}", prev, hand);
                         let ev_with_value =
                             self.expected_value_best_action(
@@ -196,7 +195,7 @@ impl <'a>ActionCalculator<'a> {
                             -1.0
                         } else {
                             let mut dealer_hand = BJHand::new();
-                            dealer_hand.add_card((*dealer_up_card).clone());
+                            dealer_hand.add_card(dealer_up_card);
 //                            println!("checking against dealer hand {} w/ {}", hand, fmt(d));
                             self.expected_with_dealer(hand,
                                                       &mut dealer_hand,
@@ -219,15 +218,15 @@ impl <'a>ActionCalculator<'a> {
                 //       with this flow.
                 let mut current_hand = hand.without_split_information();
                 for v in VALUES.iter() {
-                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, (*v).clone());
+                    let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
                     if odds_of_value != 0.0 {
                         let card_from_deck = match d.remove(v) {
                             Some(c) => c,
                             None => {
-                                panic!("Expect a value!");
+                                panic!("Expect a value: logic error");
                             }
                         };
-                        current_hand.add_card(card_from_deck);
+                        current_hand.add_card(&card_from_deck);
                         current_hand.add_double_count();
                         // Expected value is twice resolving this hand, PLUS resolving
                         // any left over splits...  it is *NOT* twice resolving this
@@ -263,7 +262,6 @@ impl <'a>ActionCalculator<'a> {
 
     fn finish_splits(&mut self, original_hand: &BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, rules: &BJRules) -> f64 {
-        use shoe::shoe::fmt;
         match original_hand.splits_to_solve() > 0 {
             false => 0.0,
             true => {
@@ -337,7 +335,7 @@ impl <'a>ActionCalculator<'a> {
                         }
                     };
                     assert_eq!(card_from_deck.value().desc(), v.desc());
-                    dealer_hand.add_card(card_from_deck);
+                    dealer_hand.add_card(&card_from_deck);
                     if rules.is_blackjack(dealer_hand) &&
                         !rules.dealer_blackjack_after_hand() {
                             // ignore

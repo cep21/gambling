@@ -60,8 +60,8 @@ impl BJHand {
     pub fn split(&mut self) {
         assert_eq!(2, self.cards.len());
         assert_eq!(self.cards[0].value(), self.cards[1].value());
-        let card_to_remove = self.cards[1].clone();
-        self.splits_to_solve.push(card_to_remove.clone());
+        let card_to_remove = self.cards[1];
+        self.splits_to_solve.push(card_to_remove);
         self.remove_card(&card_to_remove);
     }
 
@@ -71,7 +71,7 @@ impl BJHand {
         let c = self.splits_to_solve.pop().unwrap();
         assert_eq!(1, self.cards.len());
         assert_eq!(c.value(), self.cards[0].value());
-        self.add_card(c);
+        self.add_card(&c);
     }
 
     pub fn create_next_split_hand(&self) -> BJHand {
@@ -81,10 +81,10 @@ impl BJHand {
         // TODO: This could be more efficient.  push_all not working right,
         //       and can add one at a time.  Also, can I use a ref here?
         for i in self.splits_to_solve.iter() {
-            ret.splits_to_solve.push(i.clone());
+            ret.splits_to_solve.push(*i);
         }
         let card_to_add = ret.splits_to_solve.pop().unwrap();
-        ret.add_card(card_to_add);
+        ret.add_card(&card_to_add);
         ret
     }
 
@@ -125,13 +125,13 @@ impl BJHand {
         self.splits_to_solve.len()
     }
 
-    pub fn add_card(&mut self, card: Card) -> &mut BJHand {
+    pub fn add_card(&mut self, card: &Card) -> &mut BJHand {
         self.score += score_for_value(card.value());
         self.num_cards += 1;
         if card.value().index() == value::ACE.index() {
             self.ace_count += 1;
         }
-        self.cards.push(card);
+        self.cards.push(card.clone());
         self
     }
 
@@ -177,7 +177,7 @@ impl BJHand {
     pub fn new_with_cards(cards: &Vec<Card>) -> BJHand {
         let mut h = BJHand::new();
         for c in cards.iter() {
-            h.add_card((*c).clone());
+            h.add_card(c);
         }
         return h;
     }
@@ -187,7 +187,7 @@ impl BJHand {
         for v in values.iter() {
             match deck.remove(v) {
                 Some(c) => {
-                    h.add_card(c);
+                    h.add_card(&c);
                 }
                 None => return None
             }
@@ -203,20 +203,20 @@ fn test_hand() {
     assert_eq!(0, h.score());
     assert_eq!(0, h.len());
     assert_eq!(false, h.is_soft());
-    h.add_card(Card::new(value::TEN, suit::SPADE));
+    h.add_card(&Card::new(value::TEN, suit::SPADE));
     assert_eq!(1, h.len());
     assert_eq!(10, h.score());
     assert_eq!(false, h.is_soft());
-    h.add_card(Card::new(value::ACE, suit::SPADE));
+    h.add_card(&Card::new(value::ACE, suit::SPADE));
     assert_eq!(2, h.len());
     assert_eq!(21, h.score());
     assert_eq!(true, h.is_soft());
-    h.add_card(Card::new(value::TWO, suit::SPADE));
+    h.add_card(&Card::new(value::TWO, suit::SPADE));
     assert_eq!(3, h.len());
     assert_eq!(13, h.score());
     assert_eq!(false, h.is_soft());
     assert_eq!(3, h.len());
-    h.add_card(Card::new(value::KING, suit::SPADE));
+    h.add_card(&Card::new(value::KING, suit::SPADE));
     assert_eq!(4, h.len());
     assert_eq!(23, h.score());
     assert_eq!(false, h.is_soft());

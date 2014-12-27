@@ -3,6 +3,8 @@ pub struct Color {
     desc: &'static str,
 }
 
+impl Copy for Color {}
+
 impl Color {
     pub fn desc(&self) -> &str {
         return self.desc

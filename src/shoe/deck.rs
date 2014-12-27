@@ -9,9 +9,7 @@ pub fn cards_in_deck<'a>(num_decks: uint) -> Vec<Card> {
     for _ in range(0, num_decks) {
         for s in suit::SUITS.iter() {
             for v in value::VALUES.iter() {
-                let v1 = (*v).clone();
-                let s1 = (*s).clone();
-                ret.push(Card::new(v1, s1));
+                ret.push(Card::new(*v, *s));
             }
         }
     }

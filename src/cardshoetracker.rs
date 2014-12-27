@@ -57,7 +57,7 @@ impl <'a>CardShoeTracker<'a> {
     pub fn seen_cards(&self) -> uint {
         let mut ret = 0;
         for v in value::VALUES.iter() {
-            ret += self.count_value((*v).clone());
+            ret += self.count_value(*v);
         }
         return ret;
     }

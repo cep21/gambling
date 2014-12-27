@@ -8,6 +8,7 @@ use bjaction::BJAction::DOUBLE;
 use bjaction::BJAction::SURRENDER;
 use bjaction::BJAction::SPLIT;
 
+#[deriving(Copy)]
 pub struct BJRules{
     can_surrender: bool,
     split_limit: uint,
