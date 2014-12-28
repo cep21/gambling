@@ -8,11 +8,12 @@ use bjaction::BJAction::SPLIT;
 use cards::value::VALUES;
 use hand::BJHand;
 use std::collections::Bitv;
+use std::num::Int;
+use shoe::shoe::DirectShoe;
 use self::num::bigint::BigUint;
 use self::num::Zero;
-use self::num::bigint::ToBigUint;
 use self::num::Integer;
-use shoe::shoe::DirectShoe;
+use self::num::bigint::ToBigUint;
 
 pub trait HandHasher {
     fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8>;
@@ -46,15 +47,103 @@ impl HashRange {
     }
 }
 
+enum DynamicChangingU64 {
+    Regular(u64),
+    Struct(BigUint),
+}
+
+impl DynamicChangingU64 {
+    fn new(val: u64) -> DynamicChangingU64 {
+        DynamicChangingU64::Regular(val)
+    }
+    fn is_zero(&self) -> bool {
+        match *self {
+            DynamicChangingU64::Regular(ref v) => {
+                *v == 0
+            }
+            DynamicChangingU64::Struct(ref v) => {
+                v.is_zero()
+            }
+        }
+    }
+    fn is_odd(&self) -> bool {
+        match *self {
+            DynamicChangingU64::Regular(ref v) => {
+                *v % 2 == 1
+            }
+            DynamicChangingU64::Struct(ref v) => {
+                v.is_odd()
+            }
+        }
+    }
+    fn bits(&self) -> uint {
+        match *self {
+            DynamicChangingU64::Regular(ref v) => {
+                v.to_biguint().unwrap().bits()
+            }
+            DynamicChangingU64::Struct(ref v) => {
+                v.bits()
+            }
+        }
+    }
+}
+
+impl Add<uint, DynamicChangingU64> for DynamicChangingU64 {
+    fn add(self, other: uint) -> DynamicChangingU64 {
+        match self {
+            DynamicChangingU64::Regular(ref v) => {
+                match v.checked_add(other as u64) {
+                    Some(v2) => DynamicChangingU64::Regular(v2),
+                    None => DynamicChangingU64::Struct(v.to_biguint().unwrap() +
+                                                       other.to_biguint().unwrap())
+                }
+            }
+            DynamicChangingU64::Struct(ref v) => {
+                DynamicChangingU64::Struct(v + other.to_biguint().unwrap())
+            }
+        }
+    }
+}
+
+impl Mul<uint, DynamicChangingU64> for DynamicChangingU64 {
+    fn mul(self, other: uint) -> DynamicChangingU64 {
+        match self {
+            DynamicChangingU64::Regular(ref v) => {
+                match v.checked_mul(other as u64) {
+                    Some(v2) => DynamicChangingU64::Regular(v2),
+                    None => DynamicChangingU64::Struct(v.to_biguint().unwrap() *
+                                                       other.to_biguint().unwrap())
+                }
+            }
+            DynamicChangingU64::Struct(ref v) => {
+                DynamicChangingU64::Struct(v * other.to_biguint().unwrap())
+            }
+        }
+    }
+}
+
+impl Shr<uint, DynamicChangingU64> for DynamicChangingU64 {
+    fn shr(self, other: uint) -> DynamicChangingU64 {
+        match self {
+            DynamicChangingU64::Regular(ref v) => {
+                DynamicChangingU64::Regular(*v >> other)
+            }
+            DynamicChangingU64::Struct(ref v) => {
+                DynamicChangingU64::Struct(v >> other)
+            }
+        }
+    }
+}
+
 fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
-    let mut val: BigUint = Zero::zero();
-    let mut bits_required: BigUint = Zero::zero();
+    let mut val = DynamicChangingU64::new(0);
+    let mut bits_required: DynamicChangingU64 = DynamicChangingU64::new(0);
     for i in ranges.iter() {
         // TODO: This could be a lot more efficient ...
-        val = val * i.max_value.to_biguint().unwrap();
-        val = val + i.current_value.to_biguint().unwrap();
-        bits_required = bits_required * i.max_value.to_biguint().unwrap() +
-            (i.max_value - 1).to_biguint().unwrap();
+        val = val * i.max_value;
+        val = val + i.current_value;
+        bits_required = bits_required * i.max_value +
+            (i.max_value - 1);
     }
     let mut bv = Bitv::from_elem(bits_required.bits(), false);
     let mut current_bit = 0u;
