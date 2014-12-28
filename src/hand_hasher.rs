@@ -213,9 +213,9 @@ impl PlayerHandHasher {
             }
         });*/
 
-        let mut v = vec![
-                    HashRange::new(23, score),
-                    is_soft];
+        let mut v = Vec::with_capacity(10);
+        v.push(HashRange::new(23, score));
+        v.push(is_soft);
         if rules.max_doubles_single_hand() > 0 {
             v.push(HashRange::new(
                 rules.max_doubles_single_hand() + 1,
@@ -262,16 +262,12 @@ pub struct SuitlessDeckHasher;
  */
 impl DeckHasher for SuitlessDeckHasher {
     fn hash_deck(&self, _: &BJRules, shoe: &DirectShoe) -> Vec<u8> {
-        let mut vec = Vec::new();
         match shoe.maximum_count_of_any_value() {
-            None => create_hash(vec.as_slice()),
+            None => vec![0],
             Some(s) => {
-                for &v in VALUES.iter() {
-                    vec.push(HashRange::new(
-                            s + 1,
-                            shoe.count(&v)));
-                }
-                create_hash(vec.as_slice())
+                let v: Vec<HashRange> = VALUES.iter().map(
+                    |v| HashRange::new(s+1, shoe.count(v))).collect();
+                create_hash(v.as_slice())
             }
         }
     }
