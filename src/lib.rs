@@ -14,6 +14,7 @@ pub mod hand;
 pub mod cardshoetracker;
 pub mod bjaction;
 pub mod action_calculator;
+pub mod strategy_generator;
 pub mod rules;
 pub mod hand_hasher;
 pub mod hash_database;

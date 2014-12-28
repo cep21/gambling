@@ -19,6 +19,9 @@ use shoe::randomshoe::SuitPicker;
 use hand_hasher::HandHasher;
 use hand_hasher::DeckHasher;
 use hash_database::HashDatabase;
+use hand_hasher::PlayerHandHasher;
+use hand_hasher::SuitlessDeckHasher;
+use hash_database::InMemoryHashDatabase;
 
 pub struct ActionCalculator<'a> {
     player_hand_hasher: &'a (HandHasher + 'a),
@@ -27,6 +30,13 @@ pub struct ActionCalculator<'a> {
 }
 
 impl <'a>ActionCalculator<'a> {
+    pub fn new() -> &'a ActionCalculator<'a> {
+        &ActionCalculator {
+            player_hand_hasher: &'a PlayerHandHasher,
+            deck_hasher: &SuitlessDeckHasher,
+            database: &mut InMemoryHashDatabase::new(),
+        }
+    }
     fn dbget(&self, hash1: &Vec<u8>, hash2: &Vec<u8>) -> Option<f64> {
         let mut v3 = Vec::new();
         v3.push_all(hash1.as_slice());
@@ -369,11 +379,7 @@ mod tests {
                    expected: f64) {
         use shoe::randomshoe::new_infinite_shoe;
         use rules::BJRules;
-        let mut a = ActionCalculator {
-            player_hand_hasher: &PlayerHandHasher,
-            deck_hasher: &SuitlessDeckHasher,
-            database: &mut InMemoryHashDatabase::new(),
-        };
+        let mut a = ActionCalculator::new();
         let rules = BJRules::new();
         let mut shoe = new_infinite_shoe();
         let expansion = 1000000.0f64;
@@ -401,11 +407,7 @@ mod tests {
 
     fn check_best_value_rules_deck(dealer_up_card: &Value, player_cards: &Vec<Value>,
                               expected: f64, rules: &BJRules, shoe: &mut DirectShoe) {
-        let mut a = ActionCalculator {
-            player_hand_hasher: &PlayerHandHasher,
-            deck_hasher: &SuitlessDeckHasher,
-            database: &mut InMemoryHashDatabase::new(),
-        };
+        let mut a = ActionCalculator::new();
         let expansion = 1000000.0f64;
         assert_eq!(
             (expected * expansion) as int,
@@ -419,11 +421,7 @@ mod tests {
     fn check_best_value_rules_deck_action(dealer_up_card: &Value, player_cards: &Vec<Value>,
                               expected: Option<f64>, rules: &BJRules, shoe: &mut DirectShoe,
                               action: BJAction) {
-        let mut a = ActionCalculator {
-            player_hand_hasher: &PlayerHandHasher,
-            deck_hasher: &SuitlessDeckHasher,
-            database: &mut InMemoryHashDatabase::new(),
-        };
+        let mut a = ActionCalculator::new();
         let expansion = 1000000.0f64;
         let v =  a.expected_value(
             &mut BJHand::new_from_deck(shoe, player_cards).unwrap(),
