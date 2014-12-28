@@ -11,6 +11,7 @@ use std::collections::Bitv;
 use self::num::bigint::BigUint;
 use self::num::Zero;
 use self::num::bigint::ToBigUint;
+use self::num::Integer;
 use shoe::shoe::DirectShoe;
 
 pub trait HandHasher {
@@ -32,6 +33,8 @@ struct HashRange {
     current_value: uint,
 }
 
+//static biguintCache: Vec<int> = range(0, 10).map(|m| m).collect();
+
 impl HashRange {
     pub fn new(max_value: uint, current_value: uint) -> HashRange {
         assert!(max_value > 1); // if the max_value == 1, then omit the dimension
@@ -44,26 +47,22 @@ impl HashRange {
 }
 
 fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
-    // TODO: This could be a lot more efficient ...
     let mut val: BigUint = Zero::zero();
     let mut bits_required: BigUint = Zero::zero();
     for i in ranges.iter() {
+        // TODO: This could be a lot more efficient ...
         val = val * i.max_value.to_biguint().unwrap();
         val = val + i.current_value.to_biguint().unwrap();
         bits_required = bits_required * i.max_value.to_biguint().unwrap() +
             (i.max_value - 1).to_biguint().unwrap();
-        println!("{}", val);
     }
     let mut bv = Bitv::from_elem(bits_required.bits(), false);
-    //println!("val={}, bits_required={}", val, bits_required.bits());
     let mut current_bit = 0u;
-    while val > 0u.to_biguint().unwrap() {
-        bv.set(current_bit, val.clone() % 2u.to_biguint().unwrap() == 1u.to_biguint().unwrap());
+    while !val.is_zero() {
+        bv.set(current_bit, val.is_odd());
         current_bit += 1;
-        let val2 = val / 2u.to_biguint().unwrap();
-        val = val2;
+        val = val >> 1;
     }
-    //println!("bv={}", bv);
     return bv.to_bytes();
 }
 
@@ -196,6 +195,7 @@ mod tests {
     use hand_hasher::HashRange;
     use rules::BJRules;
     use shoe::randomshoe::new_infinite_shoe;
+    use self::test::Bencher;
     use hand_hasher::DealerHandHasher;
     use hand_hasher::PlayerHandHasher;
     use hand_hasher::HandHasher;
@@ -460,5 +460,25 @@ mod tests {
                              &shoe3),
             hasher.hash_deck(&rules,
                              &shoe4));
+    }
+
+    #[bench]
+    fn bench_create_hash(b: &mut Bencher) {
+        let ranges = vec![
+        HashRange::new(23, 21),
+        HashRange::new(2, 0),
+        HashRange::new(5, 1),
+        HashRange::new(5, 2),
+        HashRange::new(2, 0),
+        HashRange::new(2, 0),
+        HashRange::new(2, 1),
+        HashRange::new(2, 1),
+        HashRange::new(2, 1),
+        HashRange::new(5, 2)];
+        let range_slice = ranges.as_slice();
+        let h1 = create_hash(range_slice);
+        b.iter(|| {
+            assert_eq!(h1, create_hash(range_slice));
+        });
     }
 }
