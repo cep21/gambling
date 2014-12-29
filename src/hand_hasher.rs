@@ -155,6 +155,7 @@ fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
     return bv.to_bytes();
 }
 
+
 impl HandHasher for DealerHandHasher {
     fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
         let mut score = hand.score();
@@ -186,7 +187,7 @@ pub struct PlayerHandHasher;
 
 impl PlayerHandHasher {
     fn hash_impl(&self, rules: &BJRules, hand: &BJHand, include_actions: bool) -> Vec<u8> {
-        assert!(hand.len() >= 1);
+//        assert!(hand.len() >= 0);
         let mut score = hand.score();
         // All scores > 22 are the same to us
         if score > 22 {

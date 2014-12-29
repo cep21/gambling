@@ -76,6 +76,9 @@ impl BJRules {
     }
 
     pub fn can_split(&self, h: &BJHand) -> bool {
+        if h.len() == 0 {
+            return false;
+        }
         if h.cards()[0].value() == &ACE {
             // Can you split your aces?
             if !self.resplit_aces && h.split_number() != 0 {
@@ -165,17 +168,27 @@ mod tests {
         assert!(rules.can_double(&hand));
         assert!(rules.can_stand(&hand));
         assert!(rules.can_surrender(&hand));
+        assert!(rules.can_split(&hand));
 
         hand.split();
         assert!(rules.can_hit(&hand));
         assert!(!rules.can_double(&hand));
         assert!(!rules.can_surrender(&hand));
         assert!(!rules.can_stand(&hand));
+        assert!(!rules.can_split(&hand));
 
         hand.unsplit();
         assert!(rules.can_hit(&hand));
         assert!(rules.can_double(&hand));
         assert!(rules.can_stand(&hand));
         assert!(rules.can_surrender(&hand));
+        assert!(rules.can_split(&hand));
+
+        hand = BJHand::new();
+        assert!(rules.can_hit(&hand));
+        assert!(!rules.can_double(&hand));
+        assert!(!rules.can_stand(&hand));
+        assert!(!rules.can_surrender(&hand));
+        assert!(!rules.can_split(&hand));
     }
 }

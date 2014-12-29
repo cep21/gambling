@@ -24,17 +24,17 @@ use hand_hasher::SuitlessDeckHasher;
 use hash_database::InMemoryHashDatabase;
 
 pub struct ActionCalculator<'a> {
-    player_hand_hasher: &'a (HandHasher + 'a),
-    deck_hasher: &'a (DeckHasher + 'a),
-    database: &'a mut (HashDatabase + 'a),
+    player_hand_hasher: Box<HandHasher + 'a>,
+    deck_hasher: Box<DeckHasher + 'a>,
+    database: Box<HashDatabase + 'a>,
 }
 
 impl <'a>ActionCalculator<'a> {
-    pub fn new() -> &'a ActionCalculator<'a> {
-        &ActionCalculator {
-            player_hand_hasher: &'a PlayerHandHasher,
-            deck_hasher: &SuitlessDeckHasher,
-            database: &mut InMemoryHashDatabase::new(),
+    pub fn new() -> ActionCalculator<'a> {
+        ActionCalculator {
+            player_hand_hasher: box PlayerHandHasher,
+            deck_hasher: box SuitlessDeckHasher,
+            database: box InMemoryHashDatabase::new(),
         }
     }
     fn dbget(&self, hash1: &Vec<u8>, hash2: &Vec<u8>) -> Option<f64> {
@@ -49,6 +49,23 @@ impl <'a>ActionCalculator<'a> {
         v3.push_all(hash1.as_slice());
         v3.push_all(hash2.as_slice());
         self.database.store(v3, value)
+    }
+
+    pub fn total_expected_best_value(&mut self, d: &mut DirectShoe, rules: &BJRules) -> f64 {
+        let mut total_ev = 0.0f64;
+        for dealer_up_value in VALUES.iter() {
+            if d.count(dealer_up_value) == 0 {
+                continue;
+            }
+            let odds_of_dealer_up_value = (d.count(dealer_up_value) as f64) / (d.len() as f64);
+            let dealer_up_card = d.remove(dealer_up_value).unwrap();
+            // The game will deal itself the player's first two cards
+            let mut hand = BJHand::new();
+            let ev = self.expected_value_best_action(&mut hand, &dealer_up_card, d, rules);
+            total_ev += odds_of_dealer_up_value * ev;
+            d.insert(&dealer_up_card);
+        }
+        return total_ev;
     }
     pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
@@ -368,12 +385,10 @@ mod tests {
     use std::num::Float;
     use cards::value;
     use bjaction::BJAction;
+    use shoe::randomshoe::new_faceless_random_shoe;
     use bjaction::BJAction::STAND;
     use bjaction::BJAction::HIT;
     use rules::BJRules;
-    use hand_hasher::PlayerHandHasher;
-    use hand_hasher::SuitlessDeckHasher;
-    use hash_database::InMemoryHashDatabase;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
                    expected: f64) {
@@ -686,7 +701,6 @@ mod tests {
     #[test]
     #[ignore]
     fn test_expected_best_value_1d_88_vs_10() {
-        use shoe::randomshoe::new_faceless_random_shoe;
         // S17
         // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
         let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
@@ -754,7 +768,6 @@ mod tests {
     #[test]
     #[ignore]
     fn test_expected_best_value_1d_88_vs_9_sp2_nodas() {
-        use shoe::randomshoe::new_faceless_random_shoe;
         // S17
         // Don's book(page 403)
         // Note, my code says not to hit 8,2,2,2,2 vs 9 but his book says HIT b/c it
@@ -767,6 +780,15 @@ mod tests {
             -0.427106,
             &rules,
             &mut shoe);
+    }
+
+    #[test]
+    fn test_expected_best_value_1d_sp1_nodas() {
+        let rules = &BJRules::new_complex(false, 1, false, 1, false, false, false);
+        let mut a = ActionCalculator::new();
+        let mut shoe = &mut new_faceless_random_shoe(1);
+        let ev = a.total_expected_best_value(shoe, rules);
+        assert_eq!(1.0234, ev);
     }
 
     #[bench]
