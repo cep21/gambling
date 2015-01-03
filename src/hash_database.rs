@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 pub trait HashDatabase {
-    fn get(&self, hash: Vec<u8>) -> Option<f64>;
-    fn store(&mut self, hash: Vec<u8>, value: f64) -> Option<f64>;
+    fn get(&self, hash: &Vec<u8>) -> Option<f64>;
+    fn store(&mut self, hash: &Vec<u8>, value: f64) -> Option<f64>;
+    fn len(&self) -> uint;
 }
 
 pub struct InMemoryHashDatabase {
@@ -18,14 +19,17 @@ impl InMemoryHashDatabase {
 }
 
 impl HashDatabase for InMemoryHashDatabase {
-    fn get(&self, hash: Vec<u8>) -> Option<f64> {
-        match self.db.get(&hash) {
+    fn get(&self, hash: &Vec<u8>) -> Option<f64> {
+        match self.db.get(hash) {
             Some(s) => Some(*s),
             None => None,
         }
     }
-    fn store(&mut self, hash: Vec<u8>, value: f64) -> Option<f64> {
-        self.db.insert(hash, value)
+    fn store(&mut self, hash: &Vec<u8>, value: f64) -> Option<f64> {
+        self.db.insert(hash.clone(), value)
+    }
+    fn len(&self) -> uint {
+        self.db.len()
     }
 }
 
@@ -33,11 +37,14 @@ impl HashDatabase for InMemoryHashDatabase {
 #[deriving(Copy)]
 pub struct NoOpDatabase;
 impl HashDatabase for NoOpDatabase {
-    fn get(&self, _: Vec<u8>) -> Option<f64> {
+    fn get(&self, _: &Vec<u8>) -> Option<f64> {
         None
     }
-    fn store(&mut self, _: Vec<u8>, _: f64) -> Option<f64> {
+    fn store(&mut self, _: &Vec<u8>, _: f64) -> Option<f64> {
         None
+    }
+    fn len(&self) -> uint {
+        0
     }
 }
 
@@ -50,10 +57,10 @@ mod tests {
     #[test]
     fn test_in_memory() {
         let mut m = InMemoryHashDatabase::new();
-        assert_eq!(None, m.store(vec![1], 10.0));
-        assert_eq!(None, m.store(vec![2], 20.0));
-        assert_eq!(Some(10.0), m.get(vec![1]));
-        assert_eq!(Some(10.0), m.store(vec![1], 30.0));
-        assert_eq!(Some(30.0), m.get(vec![1]));
+        assert_eq!(None, m.store(&mut vec![1], 10.0));
+        assert_eq!(None, m.store(&mut vec![2], 20.0));
+        assert_eq!(Some(10.0), m.get(&mut vec![1]));
+        assert_eq!(Some(10.0), m.store(&mut vec![1], 30.0));
+        assert_eq!(Some(30.0), m.get(&mut vec![1]));
     }
 }

@@ -45,13 +45,13 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
 }
 
 impl <'a> DirectActualShoe<'a> {
-    /*
-       TODO: Why does this not work?
-    fn new(v: &'a mut Vec<card::Card>) -> DirectActualShoe<'a> {
+    pub fn new(v: &'a mut Vec<Card>) -> DirectActualShoe<'a> {
         return DirectActualShoe{
+            initial_length: Some(v.len()),
+            maximum_count_of_any_value: Some(0),
             cards: v,
         }
-    }*/
+    }
 }
 
 #[test]

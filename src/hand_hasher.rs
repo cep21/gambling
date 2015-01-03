@@ -111,8 +111,11 @@ impl Mul<uint, DynamicChangingU64> for DynamicChangingU64 {
             DynamicChangingU64::Regular(ref v) => {
                 match v.checked_mul(other as u64) {
                     Some(v2) => DynamicChangingU64::Regular(v2),
-                    None => DynamicChangingU64::Struct(v.to_biguint().unwrap() *
+                    None => {
+                        println!("switch over!");
+                        DynamicChangingU64::Struct(v.to_biguint().unwrap() *
                                                        other.to_biguint().unwrap())
+                    }
                 }
             }
             DynamicChangingU64::Struct(ref v) => {

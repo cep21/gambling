@@ -13,3 +13,9 @@ Rustlang code for gambling odds generation
 [dependencies.num]
 
 git = "https://github.com/rust-lang/num"
+
+[dependencies]
+time = "*"
+
+[dependencies.lazy_static]
+git = "https://github.com/Kimundi/lazy-static.rs"

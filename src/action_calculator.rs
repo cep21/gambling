@@ -22,6 +22,8 @@ use hash_database::HashDatabase;
 use hand_hasher::PlayerHandHasher;
 use hand_hasher::SuitlessDeckHasher;
 use hash_database::InMemoryHashDatabase;
+use hand::score_for_value;
+use time::TimeIt;
 
 pub struct ActionCalculator<'a> {
     player_hand_hasher: Box<HandHasher + 'a>,
@@ -37,23 +39,29 @@ impl <'a>ActionCalculator<'a> {
             database: box InMemoryHashDatabase::new(),
         }
     }
+
     fn dbget(&self, hash1: &Vec<u8>, hash2: &Vec<u8>) -> Option<f64> {
-        let mut v3 = Vec::new();
+        TimeIt::new("dbget");
+        let mut v3 = Vec::with_capacity(hash1.len() + hash2.len());
         v3.push_all(hash1.as_slice());
         v3.push_all(hash2.as_slice());
-        self.database.get(v3)
+        self.database.get(&v3)
     }
 
     fn dbstore(&mut self, hash1: &Vec<u8>, hash2: &Vec<u8>, value: f64) -> Option<f64> {
-        let mut v3 = Vec::new();
+        TimeIt::new("dbstore");
+        let mut v3 = Vec::with_capacity(hash1.len() + hash2.len());
         v3.push_all(hash1.as_slice());
         v3.push_all(hash2.as_slice());
-        self.database.store(v3, value)
+        self.database.store(&v3, value)
     }
 
     pub fn total_expected_best_value(&mut self, d: &mut DirectShoe, rules: &BJRules) -> f64 {
+        TimeIt::new("total_expected_best_value");
         let mut total_ev = 0.0f64;
+        let start_len = d.len();
         for dealer_up_value in VALUES.iter() {
+            println!("on {}", dealer_up_value);
             if d.count(dealer_up_value) == 0 {
                 continue;
             }
@@ -61,26 +69,44 @@ impl <'a>ActionCalculator<'a> {
             let dealer_up_card = d.remove(dealer_up_value).unwrap();
             // The game will deal itself the player's first two cards
             let mut hand = BJHand::new();
-            let ev = self.expected_value_best_action(&mut hand, &dealer_up_card, d, rules);
+            let mut ev = self.expected_value_best_action(&mut hand, &dealer_up_card, d, rules);
+            println!("Discovered {} at {} over {} db size", dealer_up_value, ev,
+                     self.database.len());
+            if score_for_value(dealer_up_value) == 11 {
+                // auto lost on dealer blackjack
+                let odds_of_ten = ((d.count(&TEN) + d.count(&JACK)
+                                    + d.count(&QUEEN) + d.count(&KING)) as f64)
+                    / (d.len() as f64);
+                ev -= odds_of_ten;
+            } else if score_for_value(dealer_up_value) == 10 {
+                // auto lost on dealer blackjack
+                let odds_of_ace = (d.count(&ACE) as f64)
+                    / (d.len() as f64);
+                ev -= odds_of_ace;
+            }
             total_ev += odds_of_dealer_up_value * ev;
             d.insert(&dealer_up_card);
+            assert_eq!(start_len, d.len());
+            return total_ev;
         }
         return total_ev;
     }
+
     pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
                                   dealer_up_card: &Card, d: &mut DirectShoe,
                                   rules: &BJRules) -> f64 {
+        TimeIt::new("expected_value_best_action");
         let v1 = self.player_hand_hasher.hash_hand(rules, hand);
         let v2 = self.deck_hasher.hash_deck(rules, d);
         match self.dbget(&v1, &v2) {
             Some(s) => return s,
             None => {}
         }
-//        println!("Checking expected value for hand={}", hand);
+        println!("Checking expected value for hand={}", hand);
         let mut best_result: Option<f64>  = None;
         // TODO: Can I just do something like BJAction.variants ??
         let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
-//        let mut best_action = None;
+        let mut best_action = None;
         for a in actions.iter() {
             match self.expected_value(hand, dealer_up_card, d, *a, rules) {
                 Some(r) => {
@@ -88,22 +114,22 @@ impl <'a>ActionCalculator<'a> {
                         Some(b) => {
                             if b < r {
                                 best_result = Some(r);
-//                                best_action = Some(a);
+                                best_action = Some(a);
                             }
                         }
                         None => {
                             best_result = Some(r);
-//                            best_action = Some(a);
+                            best_action = Some(a);
                         }
                     }
                 }
                 _ => {}
             }
         }
-        assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
+//        assert_eq!(v1, self.player_hand_hasher.hash_hand(rules, hand));
         assert!(best_result != None);
         let to_return = best_result.unwrap();
-//        println!("Best action {} => {}: {}", hand.simple_desc(), best_action.unwrap(), to_return);
+        println!("Best action {} => {}: {}", hand.simple_desc(), best_action.unwrap(), to_return);
         match self.dbstore(&v1, &v2, to_return) {
             Some(_) => {
                 panic!("Logic loop????...")
@@ -117,7 +143,7 @@ impl <'a>ActionCalculator<'a> {
     fn odds_of_value(&mut self, dealer_up_card: &Card,
                       d: &mut DirectShoe,
                       rules: &BJRules, v: &Value) -> f64 {
-        use hand::score_for_value;
+        TimeIt::new("odds_of_value");
         let count_of_val = d.count(v);
         if count_of_val == 0 {
             return 0.0;
@@ -170,7 +196,8 @@ impl <'a>ActionCalculator<'a> {
     pub fn expected_value(&mut self, hand: &mut BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, action: BJAction,
                       rules: &BJRules) -> Option<f64> {
-        use std::fmt;
+        TimeIt::new("expected_value");
+//        use std::fmt;
         if !rules.can_take_action(hand, action) {
             return None;
         }
@@ -178,7 +205,7 @@ impl <'a>ActionCalculator<'a> {
             HIT => {
                 assert!(rules.can_hit(hand));
                 let mut final_result = 0.0;
-                let mut debug = String::new();
+//                let mut debug = String::new();
                 for v in VALUES.iter() {
                     let odds_of_value = self.odds_of_value(dealer_up_card, d, rules, v);
                     if odds_of_value != 0.0 {
@@ -195,7 +222,7 @@ impl <'a>ActionCalculator<'a> {
                             self.expected_value_best_action(
                                 hand,dealer_up_card, d, rules);
                         final_result += odds_of_value * ev_with_value;
-                        debug = debug + format_args!(fmt::format, "{}*{} +", odds_of_value, ev_with_value).as_slice();
+//                        debug = debug + format_args!(fmt::format, "{}*{} +", odds_of_value, ev_with_value).as_slice();
                         hand.remove_card(&card_from_deck);
                         d.insert(&card_from_deck);
                     }
@@ -281,6 +308,7 @@ impl <'a>ActionCalculator<'a> {
 
     fn finish_splits(&mut self, original_hand: &BJHand, dealer_up_card: &Card,
                       d: &mut DirectShoe, rules: &BJRules) -> f64 {
+        TimeIt::new("finish_splits");
         match original_hand.splits_to_solve() > 0 {
             false => 0.0,
             true => {
@@ -310,6 +338,7 @@ impl <'a>ActionCalculator<'a> {
     pub fn expected_with_dealer(&mut self, player_hand: &BJHand,
                             dealer_hand: &mut BJHand, d: &mut DirectShoe,
                             rules: &BJRules) -> f64 {
+        TimeIt::new("expected_with_dealer");
         if !rules.should_hit_dealer_hand(dealer_hand) {
             let dealer_score = dealer_hand.score();
             let player_score = player_hand.score();
@@ -379,6 +408,8 @@ mod tests {
     extern crate test;
     use action_calculator::ActionCalculator;
     use self::test::Bencher;
+    use time::TimeFileSave;
+    use time::TimeIt;
     use cards::value::Value;
     use shoe::shoe::DirectShoe;
     use hand::BJHand;
@@ -386,6 +417,7 @@ mod tests {
     use cards::value;
     use bjaction::BJAction;
     use shoe::randomshoe::new_faceless_random_shoe;
+    use shoe::randomshoe::new_random_shoe;
     use bjaction::BJAction::STAND;
     use bjaction::BJAction::HIT;
     use rules::BJRules;
@@ -658,16 +690,21 @@ mod tests {
     #[test]
     fn test_expected_value_hit_54_vs_9() {
         use shoe::randomshoe::new_infinite_shoe;
-        // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
-        let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
-        let mut shoe = new_infinite_shoe();
-        check_best_value_rules_deck_action(
-            &value::NINE,
-            &vec![value::FIVE, value::FOUR],
-            Some(-0.052178),
-            &rules,
-            &mut shoe,
-            BJAction::HIT);
+        {
+            let _ = TimeIt::new("time_1");
+            // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
+            let rules = BJRules::new_complex(false, 3, false, 1, false, false, true);
+            let mut shoe = new_infinite_shoe();
+            check_best_value_rules_deck_action(
+                &value::NINE,
+                &vec![value::FIVE, value::FOUR],
+                Some(-0.052178),
+                &rules,
+                &mut shoe,
+                BJAction::HIT);
+        }
+        TimeFileSave::new("name");
+        panic!("Bad");
     }
 
     #[test]
@@ -787,6 +824,7 @@ mod tests {
         let rules = &BJRules::new_complex(false, 1, false, 1, false, false, false);
         let mut a = ActionCalculator::new();
         let mut shoe = &mut new_faceless_random_shoe(1);
+//        let mut shoe = &mut new_random_shoe(1);
         let ev = a.total_expected_best_value(shoe, rules);
         assert_eq!(1.0234, ev);
     }

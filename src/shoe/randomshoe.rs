@@ -379,13 +379,22 @@ pub fn new_faceless_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
     let vp = RandomDeckValuePicker::new_faceless(num_decks);
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
     for i in range (0, 13u) {
-        match VALUES[i] {
+         match VALUES[i] {
             TEN =>  sp.push(box RandomDeckSuitPicker::new(4 * 4 * num_decks)),
             JACK =>  sp.push(box RandomDeckSuitPicker::new(0)),
             QUEEN =>  sp.push(box RandomDeckSuitPicker::new(0)),
             KING =>  sp.push(box RandomDeckSuitPicker::new(0)),
             _ => sp.push(box RandomDeckSuitPicker::new(num_decks)),
         }
+/*
+         match VALUES[i] {
+            TEN =>  sp.push(box CycleSuitPicker::new()),
+            JACK =>  sp.push(box CycleSuitPicker::new()),
+            QUEEN =>  sp.push(box CycleSuitPicker::new()),
+            KING =>  sp.push(box CycleSuitPicker::new()),
+            _ => sp.push(box CycleSuitPicker::new()),
+        }
+        */
     }
     GenericDirectShoe {
         value_picker: box vp,
