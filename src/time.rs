@@ -91,13 +91,13 @@ pub struct TimeFileSave {
 impl Drop for TimeFileSave {
     fn drop(&mut self) {
         println!("Filesave");
-        match File::create(&Path::new(self.file_name)) {
+/*        match File::create(&Path::new(self.file_name)) {
             Err(_) => {}
             Ok(mut f) => {
 //                let m1 : TimeDB = TimeDB{times: TIMES.times};
 //                write!(&mut f, "{}", m1);
             }
-        };
+        };*/
     }
 }
 

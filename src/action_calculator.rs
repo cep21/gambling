@@ -704,7 +704,6 @@ mod tests {
                 BJAction::HIT);
         }
         TimeFileSave::new("name");
-        panic!("Bad");
     }
 
     #[test]
@@ -820,6 +819,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_expected_best_value_1d_sp1_nodas() {
         let rules = &BJRules::new_complex(false, 1, false, 1, false, false, false);
         let mut a = ActionCalculator::new();

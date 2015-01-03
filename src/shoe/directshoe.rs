@@ -28,7 +28,7 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
     fn remove(&mut self, v: &Value) -> Option<Card> {
         for i in range(0, self.cards.len()) {
             if (*self.cards)[i].value().index() == v.index() {
-                return self.cards.swap_remove(i);
+                return Some(self.cards.swap_remove(i));
             }
         }
         return None;
