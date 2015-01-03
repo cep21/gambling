@@ -167,10 +167,10 @@ impl BJHand {
             score: 0,
             ace_count: 0,
             splits_done: 0,
-            splits_to_solve: Vec::new(),
+            splits_to_solve: Vec::with_capacity(5),
             num_cards: 0,
             double_count: 0,
-            cards: Vec::new(),
+            cards: Vec::with_capacity(16),
         }
     }
 
