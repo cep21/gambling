@@ -11,7 +11,6 @@ use cards::value::ACE;
 use cards::value::Value;
 use cards::value::KING;
 use cards::value::QUEEN;
-use cards::value::FIVE;
 use cards::value::JACK;
 use cards::value::TEN;
 use rules::BJRules;
@@ -73,20 +72,34 @@ impl <'a>ActionCalculator<'a> {
             // The game will deal itself the player's first two cards
             let mut hand = BJHand::new();
             let mut ev = self.expected_value_best_action(&mut hand, &dealer_up_card, d);
-            println!("Discovered {} at {} over {} db size", dealer_up_value, ev,
-                     self.database.len());
-            if score_for_value(dealer_up_value) == 11 {
-                // auto lost on dealer blackjack
-                let odds_of_ten = ((d.count(&TEN) + d.count(&JACK)
-                                    + d.count(&QUEEN) + d.count(&KING)) as f64)
-                    / (d.len() as f64);
-                ev -= odds_of_ten;
-            } else if score_for_value(dealer_up_value) == 10 {
-                // auto lost on dealer blackjack
-                let odds_of_ace = (d.count(&ACE) as f64)
-                    / (d.len() as f64);
-                ev -= odds_of_ace;
+            println!("Discovered {} at {} over {} db size odds of {}", dealer_up_value, ev,
+                     self.database.len(), odds_of_dealer_up_value);
+            let instant_bj_values = {
+                match score_for_value(dealer_up_value) {
+                    1 => {
+                        vec![TEN, JACK, QUEEN, KING]
+                    }
+                    10 => {
+                        vec![ACE]
+                    }
+                    _ => {
+                        vec![]
+                    }
+                }
+            };
+            for other_dealer_card_value in instant_bj_values.iter() {
+                if d.count(other_dealer_card_value) == 0 {
+                    continue;
+                }
+                let odds_of_other_dealer = (d.count(other_dealer_card_value) as f64) / (d.len() as f64);
+                let dealer_other_card = d.remove(other_dealer_card_value).unwrap();
+                assert!(self.rules.is_blackjack(&BJHand::new_with_cards(&vec![dealer_up_card, dealer_other_card])));
+                let player_bj_odds = self.odds_of_blackjack(d);
+                ev -= odds_of_other_dealer * (1.0 - player_bj_odds);
+                d.insert(&dealer_other_card);
             }
+            println!("Discovered {} at {} over {} db size odds of {}", dealer_up_value, ev,
+                     self.database.len(), odds_of_dealer_up_value);
             total_ev += odds_of_dealer_up_value * ev;
             d.insert(&dealer_up_card);
             assert_eq!(start_len, d.len());
@@ -105,8 +118,9 @@ impl <'a>ActionCalculator<'a> {
         }
 
         // Odds of (Ace + 10) + (10 + Ace)
-        
-        return 0.0;
+
+        return (ace_count as f64 / d.len() as f64) * (ten_count as f64 / (d.len() as f64 - 1.0)) +
+            (ten_count as f64/ d.len() as f64) * (ace_count as f64 / (d.len() as f64 - 1.0));
     }
 
     pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
@@ -115,6 +129,7 @@ impl <'a>ActionCalculator<'a> {
         let v1 = {
             let mut v2 = self.player_hand_hasher.hash_hand(&self.rules, hand);
             v2.push_all(self.deck_hasher.hash_deck(&self.rules, d).as_slice());
+            v2.push(dealer_up_card.value().index() as u8);
             v2
         };
         match self.dbget(&v1) {
@@ -866,6 +881,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_expected_best_value_inf_sp4_s17_das() {
         let rules = &BJRules::new_complex(false, 3, true, 1, false, false, true);
         let mut a = ActionCalculator::new(*rules);

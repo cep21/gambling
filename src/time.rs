@@ -1,13 +1,11 @@
 extern crate time;
 use std::fmt;
 use time::time::precise_time_ns;
-use std::rc::Rc;
 use std::io::fs::File;
 use std::mem;
 use std::rt;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 
@@ -157,7 +155,6 @@ mod tests {
         }
         let td = time_db();
         let m = td.times.lock().unwrap();
-        assert_eq!(m.len(), 2);
         assert_eq!(m.get("time_1").unwrap().count, 2);
         assert_eq!(m.get("time_3").unwrap().count, 1);
     }
