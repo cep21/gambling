@@ -24,16 +24,6 @@ pub fn fmt(d: &DirectShoe) -> String {
     s.to_string()
 }
 
-/*
- * TODO: fmt::Show throws a compile exception
-impl <'a>fmt::Show for DirectShoe + 'a {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "hello")
-    }
-}
-*/
-
-// TODO: define only for test?
 #[cfg(test)]
 pub fn test_single_deck(ds: &mut DirectShoe) {
     use cards::value::ACE;

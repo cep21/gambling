@@ -17,8 +17,8 @@ use rules::BJRules;
  * will hit or stand on that 16 vs 10 before we can know what the EV of hitting
  * or standing 15 vs 10 is.
  */
-pub struct StrategyGenerator<'a> {
-    action_calc: Box<ActionCalculator<'a>>,
+pub struct StrategyGenerator<'a, 'b> {
+    action_calc: Box<ActionCalculator<'a, 'b>>,
     database: Box<HashDatabase + 'a>,
 }
 
@@ -45,7 +45,7 @@ pub struct StrategyGenerator<'a> {
 // 
 // I must know exactly what I will do on 16 vs 10 before I can calculate 15 vs 10
 
-impl <'a> StrategyGenerator<'a> {
+impl <'a, 'b> StrategyGenerator<'a, 'b> {
 /*    fn new() -> StrategyGenerator<'a> {
         StrategyGenerator{
             action_calc: box ActionCalculator::new(),
