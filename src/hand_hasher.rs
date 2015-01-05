@@ -186,6 +186,28 @@ impl HandHasher for DealerHandHasher {
 }
 
 #[deriving(Copy)]
+pub struct HandScoreHasher;
+
+impl HandHasher for HandScoreHasher {
+    fn hash_hand(&self, _: &BJRules, hand: &BJHand) -> Vec<u8> {
+        let mut score = hand.score();
+        // All scores > 22 are the same to us: Note may not be true for
+        // push 22 rules.
+        if score > 22 {
+            score = 22;
+        }
+
+        // Hash together the score and softness
+        assert!(score <= 22);
+        create_hash(&[HashRange::new(23, score)])
+    }
+    fn hash_hand_ignore_actions(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
+        self.hash_hand(rules, hand)
+    }
+}
+
+
+#[deriving(Copy)]
 pub struct PlayerHandHasher;
 
 impl PlayerHandHasher {

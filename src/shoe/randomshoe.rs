@@ -386,15 +386,14 @@ pub fn new_faceless_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
             KING =>  sp.push(box RandomDeckSuitPicker::new(0)),
             _ => sp.push(box RandomDeckSuitPicker::new(num_decks)),
         }
-/*
-         match VALUES[i] {
+
+/*         match VALUES[i] {
             TEN =>  sp.push(box CycleSuitPicker::new()),
             JACK =>  sp.push(box CycleSuitPicker::new()),
             QUEEN =>  sp.push(box CycleSuitPicker::new()),
             KING =>  sp.push(box CycleSuitPicker::new()),
             _ => sp.push(box CycleSuitPicker::new()),
-        }
-        */
+        }*/
     }
     GenericDirectShoe {
         value_picker: box vp,

@@ -1,15 +1,44 @@
 extern crate time;
 use std::fmt;
 use time::time::precise_time_ns;
+use std::rc::Rc;
 use std::io::fs::File;
-use std::collections::HashMap;
+use std::mem;
+use std::rt;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
-pub struct TimeDB {
-    times: HashMap<&'static str, InvocationTracking>,
+
+#[deriving(Clone)]
+struct TimeDB {
+    times: Arc<Mutex<HashMap<&'static str, InvocationTracking>>>,
 }
 
-pub struct InvocationTracking {
+fn time_db() -> TimeDB {
+    use std::sync::{Once, ONCE_INIT};
+    static mut TIMEDB : *const TimeDB = 0 as *const TimeDB;
+    static mut ONCE: Once = ONCE_INIT;
+    unsafe {
+        ONCE.doit(|| {
+            let timedb = TimeDB {
+                times: Arc::new(Mutex::new(HashMap::new())),
+            };
+            TIMEDB = mem::transmute(box timedb);
+
+            // Make sure to free it at exit
+            rt::at_exit(|| {
+                mem::transmute::<_, Box<TimeDB>>(TIMEDB);
+                TIMEDB = 0 as *const _;
+            });
+        });
+        (*TIMEDB).clone()
+    }
+}
+
+#[deriving(Copy)]
+struct InvocationTracking {
     count: u64,
     total_time: u64,
 }
@@ -20,7 +49,7 @@ impl fmt::Show for InvocationTracking {
             true => 0.0f64,
             false => self.total_time as f64 / self.count as f64,
         };
-        write!(f, "{} | {}", self.count, avg_time)
+        write!(f, "{} | {} ns/call", self.count, avg_time)
     }
 }
 
@@ -44,11 +73,11 @@ impl InvocationTracking {
 
 impl TimeDB {
     fn add_time(&mut self, time: &TimeIt) {
-        println!("add_time");
-        if !self.times.contains_key(time.name) {
-            self.times.insert(time.name, InvocationTracking::new(time));
+        let ref mut m = self.times.lock().unwrap();
+        if !m.contains_key(time.name) {
+            m.insert(time.name, InvocationTracking::new(time));
         } else {
-            self.times.get_mut(time.name).unwrap().add_time(time);
+            m.get_mut(time.name).unwrap().add_time(time);
         }
     }
 }
@@ -56,8 +85,9 @@ impl TimeDB {
 impl fmt::Show for TimeDB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         println!("Printing timedb");
-        for (name, res) in self.times.iter() {
-            write!(f, "{} => {}", name, res);
+        let ref m = self.times.lock().unwrap();
+        for (name, res) in m.iter() {
+            writeln!(f, "{} => {}", name, res);
         }
         write!(f, "")
     }
@@ -80,7 +110,7 @@ impl TimeIt {
 
 impl Drop for TimeIt {
     fn drop(&mut self) {
-//        TIMES.add_time(self);
+//        time_db().add_time(self);
     }
 }
 
@@ -91,13 +121,13 @@ pub struct TimeFileSave {
 impl Drop for TimeFileSave {
     fn drop(&mut self) {
         println!("Filesave");
-/*        match File::create(&Path::new(self.file_name)) {
+        match File::create(&Path::new(self.file_name)) {
             Err(_) => {}
             Ok(mut f) => {
-//                let m1 : TimeDB = TimeDB{times: TIMES.times};
-//                write!(&mut f, "{}", m1);
+                let m1 : TimeDB = time_db();
+                write!(&mut f, "{}", m1);
             }
-        };*/
+        };
     }
 }
 
@@ -113,13 +143,23 @@ impl TimeFileSave {
 mod tests {
     extern crate test;
     use time::TimeIt;
+    use time::time_db;
     use time::TimeFileSave;
-    #[ignore]
+    
     #[test]
+    #[ignore]
     fn test_times() {
-        time_3();
-        TimeFileSave::new("name");
-        panic!("Should fail");
+        {
+            time_3();
+        }
+        {
+            TimeFileSave::new("test_result.txt");
+        }
+        let td = time_db();
+        let m = td.times.lock().unwrap();
+        assert_eq!(m.len(), 2);
+        assert_eq!(m.get("time_1").unwrap().count, 2);
+        assert_eq!(m.get("time_3").unwrap().count, 1);
     }
 
     fn time_1() -> u64{
@@ -130,8 +170,7 @@ mod tests {
 
     fn time_3() {
         TimeIt::new("time_3");
-        println!("before time_1");
         time_1();
-        println!("after time_1");
+        time_1();
     }
 }

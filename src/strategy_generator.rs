@@ -46,12 +46,13 @@ pub struct StrategyGenerator<'a> {
 // I must know exactly what I will do on 16 vs 10 before I can calculate 15 vs 10
 
 impl <'a> StrategyGenerator<'a> {
-    fn new() -> StrategyGenerator<'a> {
+/*    fn new() -> StrategyGenerator<'a> {
         StrategyGenerator{
             action_calc: box ActionCalculator::new(),
             database: box InMemoryHashDatabase::new(),
         }
     }
+    */
 }
 #[cfg(test)]
 mod tests {
