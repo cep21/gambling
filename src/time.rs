@@ -110,7 +110,7 @@ impl TimeIt {
 
 impl Drop for TimeIt {
     fn drop(&mut self) {
-//        time_db().add_time(self);
+        time_db().add_time(self);
     }
 }
 

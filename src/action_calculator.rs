@@ -11,6 +11,7 @@ use cards::value::ACE;
 use cards::value::Value;
 use cards::value::KING;
 use cards::value::QUEEN;
+use cards::value::FIVE;
 use cards::value::JACK;
 use cards::value::TEN;
 use rules::BJRules;
@@ -89,9 +90,23 @@ impl <'a>ActionCalculator<'a> {
             total_ev += odds_of_dealer_up_value * ev;
             d.insert(&dealer_up_card);
             assert_eq!(start_len, d.len());
-            return total_ev;
         }
         return total_ev;
+    }
+
+    pub fn odds_of_blackjack(&self, d: &mut DirectShoe) -> f64 {
+        let ace_count = d.count(&ACE);
+        if ace_count == 0 {
+            return 0.0;
+        }
+        let ten_count = d.count(&TEN) + d.count(&JACK) + d.count(&QUEEN) + d.count(&KING);
+        if ten_count == 0 {
+            return 0.0;
+        }
+
+        // Odds of (Ace + 10) + (10 + Ace)
+        
+        return 0.0;
     }
 
     pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
@@ -438,6 +453,7 @@ mod tests {
     use bjaction::BJAction::STAND;
     use bjaction::BJAction::HIT;
     use rules::BJRules;
+    use shoe::randomshoe::new_infinite_shoe;
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
                    expected: f64) {
@@ -706,7 +722,6 @@ mod tests {
 
     #[test]
     fn test_expected_value_hit_54_vs_9() {
-        use shoe::randomshoe::new_infinite_shoe;
         {
             let _ = TimeIt::new("time_1");
             // http://wizardofodds.com/games/blackjack/appendix/9/1ds17r4/
@@ -836,6 +851,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_expected_best_value_1d_sp1_nodas() {
         let rules = &BJRules::new_complex(false, 1, false, 1, false, false, false);
         let mut a = ActionCalculator::new(*rules);
@@ -846,7 +862,21 @@ mod tests {
         {
             TimeFileSave::new("run_results.txt");
         }
-        assert_eq!(1.0234, ev);
+        assert_eq!(0.017431, ev);
+    }
+
+    #[test]
+    fn test_expected_best_value_inf_sp4_s17_das() {
+        let rules = &BJRules::new_complex(false, 3, true, 1, false, false, true);
+        let mut a = ActionCalculator::new(*rules);
+        let mut shoe = new_infinite_shoe();
+        let ev = {
+            a.total_expected_best_value(&mut shoe)
+        };
+        {
+            TimeFileSave::new("run_results.txt");
+        }
+        assert_eq!(-0.00511734, ev);
     }
 
     #[bench]

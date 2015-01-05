@@ -167,10 +167,20 @@ impl HandHasher for DealerHandHasher {
         if score > 22 {
             score = 22;
         }
+        let cards_in_hand_hash = HashRange::new(3, {
+            if hand.len() == 1 {
+                0u
+            } else if hand.len() == 2 {
+                1u
+            } else {
+                2u
+            }
+        });
 
         // Hash together the score and softness
         assert!(score <= 22);
         create_hash(&[
+                    cards_in_hand_hash,
                     HashRange::new(23, score),
                     HashRange::new(2,
         // Treat soft 17 same as hard 17 if the dealer stands on both
