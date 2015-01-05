@@ -73,33 +73,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
             let dealer_up_card = self.shoe.remove(dealer_up_value).unwrap();
             // The game will deal itself the player's first two cards
             let mut hand = BJHand::new();
-            let mut ev = self.expected_value_best_action(&mut hand, &dealer_up_card);
-            println!("Discovered {} at {} over {} db size odds of {}", dealer_up_value, ev,
-                     self.database.len(), odds_of_dealer_up_value);
-            let instant_bj_values = {
-                match score_for_value(dealer_up_value) {
-                    1 => {
-                        vec![TEN, JACK, QUEEN, KING]
-                    }
-                    10 => {
-                        vec![ACE]
-                    }
-                    _ => {
-                        vec![]
-                    }
-                }
-            };
-            for other_dealer_card_value in instant_bj_values.iter() {
-                if self.shoe.count(other_dealer_card_value) == 0 {
-                    continue;
-                }
-                let odds_of_other_dealer = (self.shoe.count(other_dealer_card_value) as f64) / (self.shoe.len() as f64);
-                let dealer_other_card = self.shoe.remove(other_dealer_card_value).unwrap();
-                assert!(self.rules.is_blackjack(&BJHand::new_with_cards(&vec![dealer_up_card, dealer_other_card])));
-                let player_bj_odds = self.odds_of_blackjack();
-                ev -= odds_of_other_dealer * (1.0 - player_bj_odds);
-                self.shoe.insert(&dealer_other_card);
-            }
+            let ev = self.expected_value_best_action(&mut hand, &dealer_up_card, false);
             println!("Discovered {} at {} over {} db size odds of {}", dealer_up_value, ev,
                      self.database.len(), odds_of_dealer_up_value);
             total_ev += odds_of_dealer_up_value * ev;
@@ -125,18 +99,45 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
             (ten_count as f64/ self.shoe.len() as f64) * (ace_count as f64 / (self.shoe.len() as f64 - 1.0));
     }
 
+    pub fn initial_hand(&self, hand: &BJHand) -> bool {
+        return
+            hand.len() == 2 &&
+            hand.split_number() == 0 &&
+            hand.double_count() == 0;
+    }
+
     pub fn expected_value_best_action(&mut self, hand: &mut BJHand,
-                                  dealer_up_card: &Card) -> f64 {
+                                      dealer_up_card: &Card, has_dealer_checked_bj: bool) -> f64 {
         TimeIt::new("expected_value_best_action");
         let v1 = {
             let mut v2 = self.player_hand_hasher.hash_hand(&self.rules, hand);
             v2.push_all(self.deck_hasher.hash_deck(&self.rules, &*self.shoe).as_slice());
             v2.push(dealer_up_card.value().index() as u8);
+            v2.push(has_dealer_checked_bj as u8);
             v2
         };
         match self.dbget(&v1) {
             Some(s) => return s,
             None => {}
+        }
+        if self.initial_hand(hand) && !self.rules.dealer_blackjack_after_hand() && !has_dealer_checked_bj {
+            let mut odds_of_dealer_bj_and_no_self_bj = 0.0;
+            for v in VALUES.iter() {
+                let card_count = self.shoe.count(v);
+                if card_count == 0 {
+                    continue;
+                }
+                let odds_of_this_value = card_count as f64 / self.shoe.len() as f64;
+                let down_dealer_card  = self.shoe.remove(v).unwrap();
+                let dealer_hand = BJHand::new_with_cards(vec![dealer_up_card, &down_dealer_card]);
+                if self.rules.is_blackjack(&dealer_hand) {
+                    if !self.rules.is_blackjack(hand) {
+                        odds_of_dealer_bj_and_no_self_bj += odds_of_this_value;
+                    }
+                }
+                self.shoe.insert(&down_dealer_card);
+            }
+            return (1.0 - odds_of_dealer_bj_and_no_self_bj) * self.expected_value_best_action(hand, dealer_up_card, true) + odds_of_dealer_bj_and_no_self_bj * -1.0;
         }
         let mut best_result: Option<f64>  = None;
         // TODO: Can I just do something like BJAction.variants ??
@@ -243,7 +244,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
                         hand.add_card(&card_from_deck);
                         let ev_with_value =
                             self.expected_value_best_action(
-                                hand,dealer_up_card);
+                                hand,dealer_up_card, true);
                         final_result += odds_of_value * ev_with_value;
                         hand.remove_card(&card_from_deck);
                         self.shoe.insert(&card_from_deck);
@@ -494,7 +495,7 @@ mod tests {
         let expansion = 1000000.0f64;
         assert_eq!(
             (expected * expansion) as int,
-            (a.expected_value_best_action(player_hand, dealer_up_card,)
+            (a.expected_value_best_action(player_hand, dealer_up_card,true)
              * expansion).round() as int);
     }
 
