@@ -4,7 +4,7 @@ use cards::card::Card;
 use shoe::shoe::DirectShoe;
 
 pub struct CardShoeTracker<'a> {
-    counts: [[uint, ..4], ..13],
+    counts: [[uint;4];13],
     wrapping: &'a mut (DirectShoe + 'a),
 }
 

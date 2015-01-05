@@ -34,7 +34,7 @@ impl HashDatabase for InMemoryHashDatabase {
 }
 
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct NoOpDatabase;
 impl HashDatabase for NoOpDatabase {
     fn get(&self, _: &Vec<u8>) -> Option<f64> {

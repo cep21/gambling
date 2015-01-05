@@ -4,7 +4,7 @@ use cards::card::Card;
 use std::fmt;
 use shoe::shoe::DirectShoe;
 
-pub const INDEX_TO_SCORE: [uint, ..13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
+pub const INDEX_TO_SCORE: [uint;13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 
 pub fn score_for_value(v: &Value) -> uint {
     return INDEX_TO_SCORE[v.index()];

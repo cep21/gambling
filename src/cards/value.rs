@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[deriving(Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Value {
     desc: &'static str,
     i: uint,
@@ -46,7 +46,7 @@ pub const QUEEN: Value = Value{desc:"queen", i:11, c: 'Q'};
 pub const KING: Value = Value{desc:"king", i:12, c: 'K'};
 pub const JOKER: Value = Value{desc:"joker", i:13, c: 'R'};
 
-pub const VALUES: [Value, ..13] = [ACE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING];
+pub const VALUES: [Value;13] = [ACE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING];
 
 #[test]
 fn test_suits() {

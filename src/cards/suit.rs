@@ -1,7 +1,7 @@
 use cards::color;
 use std::fmt;
 
-#[deriving(Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Suit {
     desc: &'static str,
     c: &'static color::Color,
@@ -43,7 +43,7 @@ pub const CLUB: Suit = Suit{desc:"club", c: &color::BLACK, i: 1};
 pub const HEART: Suit = Suit{desc:"heart", c: &color::RED, i:2};
 pub const DIAMOND: Suit = Suit{desc:"diamond", c: &color::RED, i:3};
 
-pub const SUITS: [Suit, ..4] = [SPADE, CLUB, HEART, DIAMOND];
+pub const SUITS: [Suit;4] = [SPADE, CLUB, HEART, DIAMOND];
 
 #[test]
 fn test_suits() {

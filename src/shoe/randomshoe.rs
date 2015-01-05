@@ -26,7 +26,7 @@ pub trait ValuePicker {
     fn len(&self) -> uint;
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct CycleSuitPicker {
     suit_index: uint,
 }

@@ -27,7 +27,7 @@ impl PartialEq for Color {
 pub const RED: Color= Color{desc:"red"};
 pub const BLACK: Color= Color{desc:"black"};
 
-pub const COLORS: [Color, ..2] = [BLACK, RED];
+pub const COLORS: [Color;2] = [BLACK, RED];
 
 #[test]
 fn test_colors() {

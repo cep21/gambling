@@ -9,7 +9,7 @@ use std::sync::Mutex;
 use std::collections::HashMap;
 
 
-#[deriving(Clone)]
+#[derive(Clone)]
 struct TimeDB {
     times: Arc<Mutex<HashMap<&'static str, InvocationTracking>>>,
 }
@@ -19,7 +19,7 @@ fn time_db() -> TimeDB {
     static mut TIMEDB : *const TimeDB = 0 as *const TimeDB;
     static mut ONCE: Once = ONCE_INIT;
     unsafe {
-        ONCE.doit(|| {
+        ONCE.call_once(|| {
             let timedb = TimeDB {
                 times: Arc::new(Mutex::new(HashMap::new())),
             };
@@ -35,7 +35,7 @@ fn time_db() -> TimeDB {
     }
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 struct InvocationTracking {
     count: u64,
     total_time: u64,
@@ -82,10 +82,9 @@ impl TimeDB {
 
 impl fmt::Show for TimeDB {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        println!("Printing timedb");
         let ref m = self.times.lock().unwrap();
         for (name, res) in m.iter() {
-            writeln!(f, "{} => {}", name, res);
+            try!(writeln!(f, "{} => {}", name, res));
         }
         write!(f, "")
     }
@@ -118,12 +117,11 @@ pub struct TimeFileSave {
 
 impl Drop for TimeFileSave {
     fn drop(&mut self) {
-        println!("Filesave");
         match File::create(&Path::new(self.file_name)) {
             Err(_) => {}
             Ok(mut f) => {
                 let m1 : TimeDB = time_db();
-                write!(&mut f, "{}", m1);
+                let _ = write!(&mut f, "{}", m1);
             }
         };
     }

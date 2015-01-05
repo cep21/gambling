@@ -9,6 +9,7 @@ use cards::value::VALUES;
 use hand::BJHand;
 use std::collections::Bitv;
 use std::num::Int;
+use std::ops::{Add,Mul,Shr};
 use shoe::shoe::DirectShoe;
 use self::num::bigint::BigUint;
 use self::num::Zero;
@@ -24,7 +25,7 @@ pub trait DeckHasher {
     fn hash_deck(&self, rules: &BJRules, shoe: &DirectShoe) -> Vec<u8>;
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct DealerHandHasher;
 
 struct HashRange {
@@ -88,7 +89,8 @@ impl DynamicChangingU64 {
     }
 }
 
-impl Add<uint, DynamicChangingU64> for DynamicChangingU64 {
+impl Add<uint> for DynamicChangingU64 {
+    type Output = DynamicChangingU64;
     fn add(self, other: uint) -> DynamicChangingU64 {
         match self {
             DynamicChangingU64::Regular(ref v) => {
@@ -105,7 +107,8 @@ impl Add<uint, DynamicChangingU64> for DynamicChangingU64 {
     }
 }
 
-impl Mul<uint, DynamicChangingU64> for DynamicChangingU64 {
+impl Mul<uint> for DynamicChangingU64 {
+    type Output = DynamicChangingU64;
     fn mul(self, other: uint) -> DynamicChangingU64 {
         match self {
             DynamicChangingU64::Regular(ref v) => {
@@ -125,7 +128,8 @@ impl Mul<uint, DynamicChangingU64> for DynamicChangingU64 {
     }
 }
 
-impl Shr<uint, DynamicChangingU64> for DynamicChangingU64 {
+impl Shr<uint> for DynamicChangingU64 {
+    type Output = DynamicChangingU64;
     fn shr(self, other: uint) -> DynamicChangingU64 {
         match self {
             DynamicChangingU64::Regular(ref v) => {
@@ -195,7 +199,7 @@ impl HandHasher for DealerHandHasher {
     }
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct HandScoreHasher;
 
 impl HandHasher for HandScoreHasher {
@@ -217,7 +221,7 @@ impl HandHasher for HandScoreHasher {
 }
 
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct PlayerHandHasher;
 
 impl PlayerHandHasher {
@@ -290,7 +294,7 @@ impl HandHasher for PlayerHandHasher {
     }
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub struct SuitlessDeckHasher;
 
 /**
