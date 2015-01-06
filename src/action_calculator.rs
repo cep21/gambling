@@ -446,10 +446,11 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
 #[cfg(test)]
 mod tests {
     extern crate test;
+extern crate scope_time;
     use action_calculator::ActionCalculator;
     use self::test::Bencher;
-    use time::TimeFileSave;
-    use time::TimeIt;
+    use self::scope_time::TimeFileSave;
+    use self::scope_time::TimeIt;
     use cards::value::Value;
     use shoe::shoe::DirectShoe;
     use hand::BJHand;
