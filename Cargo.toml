@@ -1,11 +1,11 @@
 [package]
 
-name = "cards"
-version = "0.0.1"
+name = "gambling"
+version = "0.0.2"
 authors = ["Jack Lindamood <jack@signalfuse.com>"]
 license = "Apache-2.0"
-homepage = "https://github.com/rust-lang/num"
-repository = "https://github.com/rust-lang/num"
+homepage = "https://github.com/cep21/gambling"
+repository = "https://github.com/cep21/gambling"
 description = """
 Rustlang code for gambling odds generation
 """
@@ -13,3 +13,6 @@ Rustlang code for gambling odds generation
 [dependencies]
 num = "*"
 time = "*"
+
+[dependencies.scope_time]
+git = "https://github.com/cep21/scope-time"

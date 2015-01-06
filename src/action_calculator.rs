@@ -1,3 +1,4 @@
+extern crate scope_time;
 use hand::BJHand;
 use bjaction::BJAction;
 use bjaction::BJAction::HIT;
@@ -25,7 +26,7 @@ use hand_hasher::DealerHandHasher;
 use hand_hasher::SuitlessDeckHasher;
 use hash_database::InMemoryHashDatabase;
 use hand::score_for_value;
-use time::TimeIt;
+use self::scope_time::TimeIt;
 
 pub struct ActionCalculator<'a, 'b> {
     player_hand_hasher: Box<HandHasher + 'a>,
