@@ -1,7 +1,3 @@
-#![feature(phase)]
-#![feature(associated_types)]
-#![feature(default_type_params)]
-
 pub mod cards {
     pub mod suit;
     pub mod color;

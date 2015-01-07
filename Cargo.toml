@@ -1,7 +1,7 @@
 [package]
 
 name = "gambling"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Jack Lindamood <jack@signalfuse.com>"]
 license = "Apache-2.0"
 homepage = "https://github.com/cep21/gambling"
