@@ -1,4 +1,5 @@
 extern crate num;
+extern crate dynamic_int;
 use rules::BJRules;
 use bjaction::BJAction::HIT;
 use bjaction::BJAction::STAND;
@@ -9,12 +10,11 @@ use cards::value::VALUES;
 use hand::BJHand;
 use std::collections::Bitv;
 use std::num::Int;
-use std::ops::{Add,Mul,Shr};
 use shoe::shoe::DirectShoe;
-use self::num::bigint::BigUint;
+
 use self::num::Zero;
 use self::num::Integer;
-use self::num::bigint::ToBigUint;
+use self::dynamic_int::DynamicChangingU64;
 
 pub trait HandHasher {
     fn hash_hand(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8>;
@@ -44,100 +44,6 @@ impl HashRange {
         HashRange {
             max_value: max_value,
             current_value: current_value,
-        }
-    }
-}
-
-enum DynamicChangingU64 {
-    Regular(u64),
-    Struct(BigUint),
-}
-
-impl DynamicChangingU64 {
-    fn new(val: u64) -> DynamicChangingU64 {
-        DynamicChangingU64::Regular(val)
-    }
-    fn is_zero(&self) -> bool {
-        match *self {
-            DynamicChangingU64::Regular(ref v) => {
-                *v == 0
-            }
-            DynamicChangingU64::Struct(ref v) => {
-                v.is_zero()
-            }
-        }
-    }
-    fn is_odd(&self) -> bool {
-        match *self {
-            DynamicChangingU64::Regular(ref v) => {
-                *v % 2 == 1
-            }
-            DynamicChangingU64::Struct(ref v) => {
-                v.is_odd()
-            }
-        }
-    }
-    fn bits(&self) -> uint {
-        match *self {
-            DynamicChangingU64::Regular(ref v) => {
-                v.to_biguint().unwrap().bits()
-            }
-            DynamicChangingU64::Struct(ref v) => {
-                v.bits()
-            }
-        }
-    }
-}
-
-impl Add<uint> for DynamicChangingU64 {
-    type Output = DynamicChangingU64;
-    fn add(self, other: uint) -> DynamicChangingU64 {
-        match self {
-            DynamicChangingU64::Regular(ref v) => {
-                match v.checked_add(other as u64) {
-                    Some(v2) => DynamicChangingU64::Regular(v2),
-                    None => DynamicChangingU64::Struct(v.to_biguint().unwrap() +
-                                                       other.to_biguint().unwrap())
-                }
-            }
-            DynamicChangingU64::Struct(ref v) => {
-                DynamicChangingU64::Struct(v + other.to_biguint().unwrap())
-            }
-        }
-    }
-}
-
-impl Mul<uint> for DynamicChangingU64 {
-    type Output = DynamicChangingU64;
-    fn mul(self, other: uint) -> DynamicChangingU64 {
-        match self {
-            DynamicChangingU64::Regular(ref v) => {
-                match v.checked_mul(other as u64) {
-                    Some(v2) => DynamicChangingU64::Regular(v2),
-                    None => {
-                        println!("switch over!");
-                        DynamicChangingU64::Struct(v.to_biguint().unwrap() *
-                                                       other.to_biguint().unwrap())
-                    }
-                }
-            }
-            DynamicChangingU64::Struct(ref v) => {
-                DynamicChangingU64::Struct(v * other.to_biguint().unwrap())
-            }
-        }
-    }
-}
-
-impl Shr<uint> for DynamicChangingU64 {
-    type Output = DynamicChangingU64;
-    fn shr(self, other: uint) -> DynamicChangingU64 {
-        match self {
-            DynamicChangingU64::Regular(ref v) => {
-                DynamicChangingU64::Regular(*v >> other)
-            }
-            DynamicChangingU64::Struct(ref v) => {
-                DynamicChangingU64::Struct(v >> other)
-            }
         }
     }
 }
@@ -316,6 +222,7 @@ impl DeckHasher for SuitlessDeckHasher {
 #[cfg(test)]
 mod tests {
     extern crate test;
+    extern crate num;
     use hand_hasher::create_hash;
     use hand_hasher::HashRange;
     use rules::BJRules;

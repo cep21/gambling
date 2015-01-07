@@ -16,3 +16,6 @@ time = "*"
 
 [dependencies.scope_time]
 git = "https://github.com/cep21/scope-time"
+
+[dependencies.dynamic_int]
+git = "https://github.com/cep21/dynamic-int"
