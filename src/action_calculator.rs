@@ -66,7 +66,6 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
         let mut total_ev = 0.0f64;
         let start_len = self.shoe.len();
         for dealer_up_value in VALUES.iter() {
-            println!("on {}", dealer_up_value);
             if self.shoe.count(dealer_up_value) == 0 {
                 continue;
             }
@@ -75,8 +74,6 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
             // The game will deal itself the player's first two cards
             let mut hand = BJHand::new();
             let ev = self.expected_value_best_action(&mut hand, &dealer_up_card, false);
-            println!("Discovered {} at {} over {} db size odds of {}", dealer_up_value, ev,
-                     self.database.len(), odds_of_dealer_up_value);
             total_ev += odds_of_dealer_up_value * ev;
             self.shoe.insert(&dealer_up_card);
             assert_eq!(start_len, self.shoe.len());
@@ -122,7 +119,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
             None => {}
         }
         if self.initial_hand(hand) && !self.rules.dealer_blackjack_after_hand() && !has_dealer_checked_bj {
-            let mut odds_of_dealer_bj_and_no_self_bj = 0.0;
+            let mut odds_of_dealer_bj = 0.0;
             for v in VALUES.iter() {
                 let card_count = self.shoe.count(v);
                 if card_count == 0 {
@@ -132,13 +129,20 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
                 let down_dealer_card  = self.shoe.remove(v).unwrap();
                 let dealer_hand = BJHand::new_with_cards(&vec![*dealer_up_card, down_dealer_card]);
                 if self.rules.is_blackjack(&dealer_hand) {
-                    if !self.rules.is_blackjack(hand) {
-                        odds_of_dealer_bj_and_no_self_bj += odds_of_this_value;
-                    }
+                    odds_of_dealer_bj += odds_of_this_value;
                 }
                 self.shoe.insert(&down_dealer_card);
             }
-            return (1.0 - odds_of_dealer_bj_and_no_self_bj) * self.expected_value_best_action(hand, dealer_up_card, true) + odds_of_dealer_bj_and_no_self_bj * -1.0;
+            if self.rules.is_blackjack(hand) {
+                return (1.0 - odds_of_dealer_bj) * self.expected_value_best_action(hand,
+                                                                                   dealer_up_card,
+                                                                                   true);
+            } else {
+                return (1.0 - odds_of_dealer_bj) * self.expected_value_best_action(hand,
+                                                                                   dealer_up_card,
+                                                                                   true) +
+                    odds_of_dealer_bj * -1.0;
+            }
         }
         let mut best_result: Option<f64>  = None;
         // TODO: Can I just do something like BJAction.variants ??
@@ -462,6 +466,7 @@ extern crate scope_time;
     use bjaction::BJAction::HIT;
     use rules::BJRules;
     use shoe::randomshoe::new_infinite_shoe;
+    use cards::value::{TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ACE};
 
     fn check_value(dealer_cards: &Vec<Value>, player_cards: &Vec<Value>,
                    expected: f64) {
@@ -899,14 +904,43 @@ extern crate scope_time;
         let rules = &BJRules::new_complex(false, 3, false, 1, false, false, true);
         let shoe = &mut new_infinite_shoe();
         let mut a = ActionCalculator::new(*rules, shoe);
-        let ev = {
-            a.total_expected_best_value()
-        };
+        let ev = a.total_expected_best_value();
         {
             TimeFileSave::new("run_results.txt");
         }
         // Still not exactly right :(
         assert_eq!(-0.00511734, ev);
+    }
+
+    #[test]
+    fn test_all_expected_best_value_inf_sp4_s17_das() {
+        // http://wizardofodds.com/games/blackjack/appendix/1/
+//        let rules = &BJRules::new_complex(false, 9, false, 1, false, false, true);
+        let rules = &BJRules::new();
+        let all_scores = [FOUR, FIVE, SIX, SEVEN, EIGHT, NINE];
+        let value_card = vec![TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ACE];
+        let all_values = vec![
+            vec![-0.292784,   -0.2522501,   -0.211063,   -0.167193,   -0.153699,   -0.475375,   -0.510518,   -0.543150,   -0.540430,   -0.666951],
+            vec![-0.152975,   -0.117216,   -0.080573,   -0.044941,   0.011739,    -0.106809,   -0.381951,   -0.423154,   -0.419721,   -0.478033],
+            vec![0.121742,    0.148300,    0.175854,    0.199561,    0.283444,    0.399554,    0.105951,    -0.183163,   -0.178301,   -0.100199],
+            vec![0.386305,    0.404363,    0.423179,    0.439512,    0.495977,    0.615976,    0.593854,    0.287597,    0.0631181,    0.277636],
+            vec![0.639987,    0.650272,    0.661050,    0.670360,    0.703959,    0.773227,    0.791815,    0.758357,    0.554538,    0.655470],
+            vec![0.882007,    0.885300,    0.888767,    0.891754,    0.902837,    0.925926,    0.930605,    0.939176,    0.962624,    0.922194]
+        ];
+        for (val, scores) in all_scores.iter().zip(all_values.iter()) {
+            for (dealer_up_value, ev) in value_card.iter().zip(scores.iter()) {
+                let shoe = &mut new_infinite_shoe();
+                let mut player_hand = BJHand::new_from_deck(shoe, &vec![TEN, TWO, *val]).unwrap();
+                let dealer_up_card = shoe.remove(dealer_up_value).unwrap();
+                let mut a = ActionCalculator::new(*rules, shoe);
+                let expansion = 1000000.0f64;
+                println!("{} {} {}", player_hand.score(), dealer_up_card.value(), ev);
+                assert_eq!(
+                    (*ev * expansion) as int,
+                    (a.expected_value(&mut player_hand, &dealer_up_card, STAND, true).unwrap()
+                     * expansion).round() as int);
+                    }
+        }
     }
 
     #[bench]
