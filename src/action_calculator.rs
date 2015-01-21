@@ -41,11 +41,11 @@ pub struct ActionCalculator<'a, 'b> {
 impl <'a, 'b>ActionCalculator<'a, 'b> {
     pub fn new(rules: BJRules, shoe: &'b mut (DirectShoe + 'b)) -> ActionCalculator<'a, 'b> {
         ActionCalculator {
-            player_hand_hasher: box PlayerHandHasher,
-            dealer_hand_hasher: box DealerHandHasher,
-            hand_score_hasher: box HandScoreHasher,
-            deck_hasher: box SuitlessDeckHasher,
-            database: box InMemoryHashDatabase::new(),
+            player_hand_hasher: Box::new(PlayerHandHasher),
+            dealer_hand_hasher: Box::new(DealerHandHasher),
+            hand_score_hasher: Box::new(HandScoreHasher),
+            deck_hasher: Box::new(SuitlessDeckHasher),
+            database: Box::new(InMemoryHashDatabase::new()),
             rules: rules,
             shoe: shoe,
         }
@@ -178,7 +178,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
 
     fn odds_of_value(&mut self, dealer_up_card: &Card, v: &Value) -> f64 {
         TimeIt::new("odds_of_value");
-        let count_of_val = self.shoe.count(v);
+        let count_of_val = self.shoe.count(v) as u64;
         if count_of_val == 0 {
             return 0.0;
         }
@@ -190,18 +190,18 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
             match self.shoe.initial_length() {
                 Some(_) => {
                     if self.rules.dealer_blackjack_after_hand() {
-                        (self.shoe.len(), None)
+                        (self.shoe.len() as u32, None)
                     } else {
                         match score_for_value(dealer_up_card.value()) {
-                            10 => (self.shoe.len() - self.shoe.count(&ACE), Some(score_for_value(&ACE))),
-                            11 => (self.shoe.len() - self.shoe.count(&TEN) - self.shoe.count(&JACK) - self.shoe.count(&QUEEN) -
+                            10 => (self.shoe.len() as u32 - self.shoe.count(&ACE), Some(score_for_value(&ACE))),
+                            11 => (self.shoe.len() as u32 - self.shoe.count(&TEN) - self.shoe.count(&JACK) - self.shoe.count(&QUEEN) -
                                self.shoe.count(&KING), Some(score_for_value(&TEN))),
-                            _ => (self.shoe.len(), None)
+                            _ => (self.shoe.len() as u32, None)
                         }
                     }
                 },
                 // The second None here is KIND OF a lie ... oh well
-                None => (self.shoe.len(), None)
+                None => (self.shoe.len() as u32, None)
             }
         };
         // Deck is [1,2, 2, 3, 3, 4, 4, 4]
@@ -220,7 +220,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
                    (count_of_val as f64 / num_valid_down_cards as f64) *
                     ((count_of_val - 1) as f64 / (self.shoe.len() - 1) as f64)
                     +
-                    ((num_valid_down_cards - count_of_val) as f64 /
+                    ((num_valid_down_cards as u64 - count_of_val) as f64 /
                      num_valid_down_cards as f64) *
                     ((count_of_val) as f64 / (self.shoe.len() - 1) as f64),
             }
@@ -249,7 +249,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
                         hand.add_card(&card_from_deck);
                         let ev_with_value =
                             self.expected_value_best_action(
-                                hand,dealer_up_card, has_dealer_checked_bj);
+                                hand, dealer_up_card, has_dealer_checked_bj);
                         final_result += odds_of_value * ev_with_value;
                         hand.remove_card(&card_from_deck);
                         self.shoe.insert(&card_from_deck);
@@ -271,7 +271,6 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
                         } else {
                             let mut dealer_hand = BJHand::new();
                             dealer_hand.add_card(dealer_up_card);
-//                            println!("checking against dealer hand {} w/ {}", hand, fmt(d));
                             self.expected_with_dealer(hand, &mut dealer_hand)
                         }
                     }
@@ -340,7 +339,7 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
         match original_hand.splits_to_solve() > 0 {
             false => 0.0,
             true => {
-                let mut index = 0u;
+                let mut index = 0;
                 for &c in original_hand.cards().iter() {
                     index += 1;
                     // We still consider the card that made the split
@@ -397,13 +396,13 @@ impl <'a, 'b>ActionCalculator<'a, 'b> {
             let number_of_valid_cards = {
                 if self.rules.dealer_blackjack_after_hand() ||
                     dealer_hand.len() != 1 {
-                        self.shoe.len()
+                        self.shoe.len() as u64
                 } else {
                     match dealer_hand.score() {
-                        10 => self.shoe.len() - self.shoe.count(&ACE),
-                        11 => self.shoe.len() - self.shoe.count(&TEN) - self.shoe.count(&JACK) - self.shoe.count(&QUEEN) -
-                           self.shoe.count(&KING),
-                        _ => self.shoe.len()
+                        10 => self.shoe.len() as u64 - self.shoe.count(&ACE) as u64,
+                        11 => self.shoe.len() as u64 - (self.shoe.count(&TEN) + self.shoe.count(&JACK) + self.shoe.count(&QUEEN) +
+                           self.shoe.count(&KING)) as u64,
+                        _ => self.shoe.len() as u64
                     }
                 }
             };
@@ -479,9 +478,9 @@ extern crate scope_time;
         let mut a = ActionCalculator::new(rules, shoe);
         let expansion = 1000000.0f64;
         assert_eq!(
-            (expected * expansion) as int,
+            (expected * expansion) as i64,
             (a.expected_with_dealer(&player_hand, &mut dealer_hand)
-                * expansion).round() as int);
+                * expansion).round() as i64);
     }
 
     fn check_best_value(dealer_up_card: &Value, player_cards: &Vec<Value>,
@@ -504,9 +503,9 @@ extern crate scope_time;
         let mut a = ActionCalculator::new(*rules, shoe);
         let expansion = 1000000.0f64;
         assert_eq!(
-            (expected * expansion) as int,
-            (a.expected_value_best_action(player_hand, dealer_up_card,true)
-             * expansion).round() as int);
+            (expected * expansion) as i64,
+            (a.expected_value_best_action(player_hand, dealer_up_card, true)
+             * expansion).round() as i64);
     }
 
     fn check_best_value_rules_deck_action(dealer_up_card: &Value, player_cards: &Vec<Value>,
@@ -522,8 +521,8 @@ extern crate scope_time;
             action, true);
         match v {
             Some(f) => assert_eq!(
-                (expected.unwrap() * expansion) as int,
-                (f * expansion).round() as int),
+                (expected.unwrap() * expansion) as i64,
+                (f * expansion).round() as i64),
             None => assert_eq!(expected, None)
         }
     }
@@ -894,8 +893,8 @@ extern crate scope_time;
         let expected = 0.048265;
         let expansion = 1000000.0f64;
         assert_eq!(
-            (expected * expansion) as int,
-            (a.odds_of_blackjack() * expansion).round() as int);
+            (expected * expansion) as i64,
+            (a.odds_of_blackjack() * expansion).round() as i64);
     }
 
     #[test]
@@ -934,11 +933,11 @@ extern crate scope_time;
                 let dealer_up_card = shoe.remove(dealer_up_value).unwrap();
                 let mut a = ActionCalculator::new(*rules, shoe);
                 let expansion = 1000000.0f64;
-                println!("{} {} {}", player_hand.score(), dealer_up_card.value(), ev);
+                println!("{} {:?} {}", player_hand.score(), dealer_up_card.value(), ev);
                 assert_eq!(
-                    (*ev * expansion) as int,
+                    (*ev * expansion) as i64,
                     (a.expected_value(&mut player_hand, &dealer_up_card, STAND, true).unwrap()
-                     * expansion).round() as int);
+                     * expansion).round() as i64);
                     }
         }
     }

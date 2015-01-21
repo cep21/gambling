@@ -4,18 +4,18 @@ use cards::card::Card;
 use std::fmt;
 use shoe::shoe::DirectShoe;
 
-pub const INDEX_TO_SCORE: [uint;13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
+pub const INDEX_TO_SCORE: [u32;13] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10];
 
-pub fn score_for_value(v: &Value) -> uint {
+pub fn score_for_value(v: &Value) -> u32 {
     return INDEX_TO_SCORE[v.index()];
 }
 
 pub struct BJHand {
-    score: uint,
-    ace_count: uint,
-    splits_done: uint,
-    num_cards: uint,
-    double_count: uint,
+    score: u32,
+    ace_count: u32,
+    splits_done: u32,
+    num_cards: u32,
+    double_count: u32,
     // The first two cards are very important for blackjack
     cards: Vec<Card>,
     splits_to_solve: Vec<Card>,
@@ -23,7 +23,7 @@ pub struct BJHand {
 
 impl fmt::Show for BJHand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}|p={}|d={}|s={}",
+        write!(f, "{:?}|p={}|d={}|s={:?}",
                self.cards, self.splits_done,
                self.double_count, self.splits_to_solve)
     }
@@ -34,7 +34,7 @@ impl BJHand {
         &self.cards
     }
 
-    pub fn score(&self) -> uint {
+    pub fn score(&self) -> u32 {
         if self.is_soft() {
             return self.score + 10;
         } else {
@@ -95,7 +95,7 @@ impl BJHand {
         ret
     }
 
-    pub fn double_count(&self) -> uint {
+    pub fn double_count(&self) -> u32 {
         self.double_count
     }
 
@@ -103,7 +103,7 @@ impl BJHand {
         self.double_count += 1
     }
 
-    pub fn splits_done(&self) -> uint {
+    pub fn splits_done(&self) -> u32 {
         self.splits_done
     }
 
@@ -112,17 +112,17 @@ impl BJHand {
         self.double_count -= 1;
     }
 
-    pub fn len(&self) -> uint {
-        assert_eq!(self.num_cards, self.cards.len());
+    pub fn len(&self) -> u32 {
+        assert_eq!(self.num_cards, self.cards.len() as u32);
         return self.num_cards;
     }
 
-    pub fn split_number(&self) -> uint {
-        self.splits_done + self.splits_to_solve.len()
+    pub fn split_number(&self) -> u32 {
+        self.splits_done + self.splits_to_solve.len() as u32
     }
 
-    pub fn splits_to_solve(&self) -> uint {
-        self.splits_to_solve.len()
+    pub fn splits_to_solve(&self) -> u32 {
+        self.splits_to_solve.len() as u32
     }
 
     pub fn add_card(&mut self, card: &Card) -> &mut BJHand {

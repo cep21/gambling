@@ -5,7 +5,7 @@ use std::fmt;
 pub struct Suit {
     desc: &'static str,
     c: &'static color::Color,
-    i: uint,
+    i: usize,
 }
 
 impl Suit {
@@ -15,7 +15,7 @@ impl Suit {
     pub fn color(&self) -> &color::Color {
         return self.c;
     }
-    pub fn index(&self) -> uint {
+    pub fn index(&self) -> usize {
         return self.i;
     }
     pub fn char(&self) -> char {
@@ -54,5 +54,5 @@ fn test_suits() {
     assert_eq!("diamond", DIAMOND.desc());
     assert_eq!(0, SPADE.index());
     assert_eq!(SPADE, SPADE);
-    println!("{}", SPADE);
+    println!("{:?}", SPADE);
 }

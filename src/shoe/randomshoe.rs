@@ -14,21 +14,21 @@ pub trait SuitPicker {
     fn suit(&mut self) -> Option<Suit>;
     fn insert(&mut self, &Suit);
     fn remove(&mut self, &Suit) -> Option<Suit>;
-    fn count(&self, s: &Suit) -> uint;
-    fn len(&self) -> uint;
+    fn count(&self, s: &Suit) -> u32;
+    fn len(&self) -> usize;
 }
 
 pub trait ValuePicker {
     fn value(&mut self) -> Option<Value>;
-    fn count(&self, v: &Value) -> uint;
+    fn count(&self, v: &Value) -> u32;
     fn remove(&mut self, v: &Value) -> Option<Value>;
     fn insert(&mut self, v: &Value);
-    fn len(&self) -> uint;
+    fn len(&self) -> usize;
 }
 
 #[derive(Copy)]
 pub struct CycleSuitPicker {
-    suit_index: uint,
+    suit_index: usize,
 }
 
 impl CycleSuitPicker {
@@ -42,18 +42,18 @@ impl CycleSuitPicker {
 impl SuitPicker for CycleSuitPicker {
     fn suit(&mut self) -> Option<Suit> {
         self.suit_index += 1;
-        return Some(SUITS[self.suit_index % 4]);
+        return Some(SUITS[self.suit_index as usize % 4]);
     }
     fn insert(&mut self, _: &Suit) {
         // Not needed
     }
-    fn count(&self, _: &Suit) -> uint {
+    fn count(&self, _: &Suit) -> u32 {
         return 1;
     }
     fn remove(&mut self, val: &Suit) -> Option<Suit>{
         return Some(SUITS[val.index()])
     }
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         return 4;
     }
 }
@@ -62,19 +62,19 @@ struct RandomSuitPicker;
 
 impl SuitPicker for RandomSuitPicker {
     fn suit(&mut self) -> Option<Suit> {
-        let suit_index = rand::random::<uint>() % SUITS.len();
-        return Some(SUITS[suit_index % 4]);
+        let suit_index = rand::random::<usize>() % SUITS.len();
+        return Some(SUITS[suit_index as usize % 4]);
     }
     fn insert(&mut self, _: &Suit) {
         // Infinite deck.  Does nothing
     }
-    fn count(&self, _: &Suit) -> uint {
+    fn count(&self, _: &Suit) -> u32 {
         return 1;
     }
     fn remove(&mut self, val: &Suit) -> Option<Suit>{
         return Some(SUITS[val.index()])
     }
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         return 4;
     }
 }
@@ -84,10 +84,10 @@ struct RandomValuePicker;
 
 impl ValuePicker for RandomValuePicker {
     fn value(&mut self) -> Option<Value> {
-        let value_index = rand::random::<uint>() % VALUES.len();
+        let value_index = rand::random::<usize>() % VALUES.len();
         Some(VALUES[value_index])
     }
-    fn count(&self, _: &Value) -> uint {
+    fn count(&self, _: &Value) -> u32 {
         // Assumes full single deck
         return 4;
     }
@@ -97,30 +97,30 @@ impl ValuePicker for RandomValuePicker {
     fn insert(&mut self, _: &Value) {
         // infinite deck.  Nothing done
     }
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         // Assume full single deck
         return 52;
     }
 }
 
 struct IntCount {
-    value: uint,
-    counts: uint,
+    value: u32,
+    counts: u32,
 }
 
 
 pub struct RandomItemPicker {
-    non_zero_index_counts: Vec<uint>,
+    non_zero_index_counts: Vec<usize>,
     indexed_value_counts: Vec<IntCount>,
-    size: uint,
+    size: u32,
 }
 
 impl RandomItemPicker {
-    pub fn new(initial_count_each: uint, max_index: uint) -> RandomItemPicker {
+    pub fn new(initial_count_each: u32, max_index: u32) -> RandomItemPicker {
         let mut non_zero_index_counts= Vec::new();
         let mut indexed_value_counts= Vec::new();
         for i in range(0, max_index) {
-            non_zero_index_counts.push(i);
+            non_zero_index_counts.push(i as usize);
             indexed_value_counts.push(IntCount{value: i, counts: initial_count_each});
         }
         return RandomItemPicker {
@@ -130,15 +130,15 @@ impl RandomItemPicker {
         };
     }
 
-    pub fn get_index(&mut self, index_to_find: uint) -> Option<uint> {
-        let mut current: uint = 0;
+    pub fn get_index(&mut self, index_to_find: u32) -> Option<u32> {
+        let mut current: u32 = 0;
         // The first time value_index <= current, we take the last value
         let mut index_in_loop = 0;
         while index_in_loop < self.non_zero_index_counts.len() {
             let index = self.non_zero_index_counts[index_in_loop];
             if self.indexed_value_counts[index].counts > 0 {
                 if current + self.indexed_value_counts[index].counts > index_to_find {
-                    return Some(index);
+                    return Some(index as u32);
                 }
                 current += self.indexed_value_counts[index].counts;
                 index_in_loop += 1;
@@ -149,7 +149,7 @@ impl RandomItemPicker {
         return None;
     }
 
-    fn value(&mut self) -> Option<uint> {
+    fn value(&mut self) -> Option<u32> {
         if self.non_zero_index_counts.len() == 0 {
             return None;
         }
@@ -157,7 +157,7 @@ impl RandomItemPicker {
             return None;
         }
         let value_to_ret = {
-            let value_index = rand::random::<uint>() % self.size;
+            let value_index = rand::random::<u32>() % self.size;
             let value_count_index_to_consider = match self.get_index(value_index) {
                 Some(c) => c,
                 None => {
@@ -165,7 +165,7 @@ impl RandomItemPicker {
                 }
             };
             let ref mut value_to_look = self.indexed_value_counts.get_mut(
-                value_count_index_to_consider).unwrap();
+                value_count_index_to_consider as usize).unwrap();
             let value_to_ret = value_to_look.value;
             if value_to_look.counts == 0 {
                 None
@@ -182,11 +182,11 @@ impl RandomItemPicker {
             None => self.value()
         }
     }
-    fn count(&self, v: uint) -> uint {
-        return self.indexed_value_counts[v].counts;
+    fn count(&self, v: u32) -> u32 {
+        return self.indexed_value_counts[v as usize].counts;
     }
-    fn remove(&mut self, val: uint) -> bool {
-        let ref mut v = self.indexed_value_counts.get_mut(val).unwrap();
+    fn remove(&mut self, val: u32) -> bool {
+        let ref mut v = self.indexed_value_counts.get_mut(val as usize).unwrap();
         match v.counts == 0 {
             true => false,
             false => {
@@ -196,15 +196,15 @@ impl RandomItemPicker {
             }
         }
     }
-    fn insert(&mut self, val: uint) {
-        if self.indexed_value_counts[val].counts == 0 {
-            self.non_zero_index_counts.push(val);
+    fn insert(&mut self, val: u32) {
+        if self.indexed_value_counts[val as usize].counts == 0 {
+            self.non_zero_index_counts.push(val as usize);
         }
-        self.indexed_value_counts[val].counts += 1;
+        self.indexed_value_counts[val as usize].counts += 1;
         self.size += 1;
     }
 
-    fn len(&self) -> uint {
+    fn len(&self) -> u32 {
         return self.size;
     }
 }
@@ -215,13 +215,13 @@ pub struct RandomDeckValuePicker {
 
 
 impl RandomDeckValuePicker {
-    pub fn new(num_decks: uint) -> RandomDeckValuePicker {
+    pub fn new(num_decks: u32) -> RandomDeckValuePicker {
         return RandomDeckValuePicker{
-            item_picker: RandomItemPicker::new(4 * num_decks, VALUES.len()),
+            item_picker: RandomItemPicker::new(4u32 * num_decks, VALUES.len() as u32),
         };
     }
-    pub fn new_faceless(num_decks: uint) -> RandomDeckValuePicker {
-        let mut ip = RandomItemPicker::new(4 * num_decks, VALUES.len());
+    pub fn new_faceless(num_decks: u32) -> RandomDeckValuePicker {
+        let mut ip = RandomItemPicker::new(4 * num_decks, VALUES.len() as u32);
         ip.indexed_value_counts[TEN.index()].counts = 4 * 4 * num_decks;
         ip.indexed_value_counts[JACK.index()].counts = 0;
         ip.indexed_value_counts[QUEEN.index()].counts = 0;
@@ -235,24 +235,24 @@ impl RandomDeckValuePicker {
 impl ValuePicker for RandomDeckValuePicker {
     fn value(&mut self) -> Option<Value> {
         match self.item_picker.value() {
-            Some(c) => Some(VALUES[c]),
+            Some(c) => Some(VALUES[c as usize]),
             None => None
         }
     }
-    fn count(&self, v: &Value) -> uint {
-        self.item_picker.count(v.index())
+    fn count(&self, v: &Value) -> u32 {
+        self.item_picker.count(v.index() as u32)
     }
     fn remove(&mut self, val: &Value) -> Option<Value> {
-        match self.item_picker.remove(val.index()) {
+        match self.item_picker.remove(val.index() as u32) {
             true => Some(VALUES[val.index()]),
             false => None,
         }
     }
     fn insert(&mut self, val: &Value) {
-        self.item_picker.insert(val.index())
+        self.item_picker.insert(val.index() as u32)
     }
-    fn len(&self) -> uint {
-        return self.item_picker.len();
+    fn len(&self) -> usize {
+        return self.item_picker.len() as usize;
     }
 }
 
@@ -262,9 +262,9 @@ pub struct RandomDeckSuitPicker {
 
 
 impl RandomDeckSuitPicker {
-    pub fn new(num_decks: uint) -> RandomDeckSuitPicker {
+    pub fn new(num_decks: u32) -> RandomDeckSuitPicker {
         return RandomDeckSuitPicker{
-            item_picker: RandomItemPicker::new(num_decks, SUITS.len()),
+            item_picker: RandomItemPicker::new(num_decks, SUITS.len() as u32),
         };
     }
 }
@@ -272,24 +272,24 @@ impl RandomDeckSuitPicker {
 impl SuitPicker for RandomDeckSuitPicker {
     fn suit(&mut self) -> Option<Suit> {
         match self.item_picker.value() {
-            Some(c) => Some(SUITS[c]),
+            Some(c) => Some(SUITS[c as usize]),
             None => None
         }
     }
-    fn count(&self, v: &Suit) -> uint {
-        self.item_picker.count(v.index())
+    fn count(&self, v: &Suit) -> u32 {
+        self.item_picker.count(v.index() as u32)
     }
     fn remove(&mut self, val: &Suit) -> Option<Suit> {
-        match self.item_picker.remove(val.index()) {
+        match self.item_picker.remove(val.index() as u32) {
             true => Some(SUITS[val.index()]),
             false => None,
         }
     }
     fn insert(&mut self, val: &Suit) {
-        self.item_picker.insert(val.index())
+        self.item_picker.insert(val.index() as u32)
     }
-    fn len(&self) -> uint {
-        return self.item_picker.len();
+    fn len(&self) -> usize {
+        return self.item_picker.len() as usize;
     }
 }
 
@@ -297,8 +297,8 @@ impl SuitPicker for RandomDeckSuitPicker {
 pub struct GenericDirectShoe<'a> {
     value_picker: Box<ValuePicker + 'a>,
     suit_pickers: Box<[Box<SuitPicker + 'a>]>,
-    initial_length: Option<uint>,
-    maximum_count_of_any_value: Option<uint>,
+    initial_length: Option<u32>,
+    maximum_count_of_any_value: Option<u32>,
 }
 /*
 impl <'a>GenericDirectShoe<'a> {
@@ -330,10 +330,10 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
             },
         };
     }
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         return self.value_picker.len();
     }
-    fn count(&self, v: &Value) -> uint {
+    fn count(&self, v: &Value) -> u32 {
         return self.value_picker.count(v);
     }
     fn remove(&mut self, v: &Value) -> Option<Card> {
@@ -353,50 +353,50 @@ impl <'a>DirectShoe for GenericDirectShoe<'a> {
         self.value_picker.insert(v.value());
         self.suit_pickers[v.value().index()].insert(v.suit());
     }
-    fn initial_length(&self) -> Option<uint> {
+    fn initial_length(&self) -> Option<u32> {
         self.initial_length
     }
-    fn maximum_count_of_any_value(&self) -> Option<uint> {
+    fn maximum_count_of_any_value(&self) -> Option<u32> {
         self.maximum_count_of_any_value
     }
 }
 
-pub fn new_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
+pub fn new_random_shoe<'a>(num_decks: u32) -> GenericDirectShoe<'a> {
     let vp = RandomDeckValuePicker::new(num_decks);
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
-    for _ in range (0, 13u) {
-        sp.push(box RandomDeckSuitPicker::new(num_decks));
+    for _ in range (0, 13) {
+        sp.push(Box::new(RandomDeckSuitPicker::new(num_decks)));
     }
     GenericDirectShoe {
-        value_picker: box vp,
+        value_picker: Box::new(vp),
         suit_pickers: sp.into_boxed_slice(),
         initial_length: Some(num_decks * 52),
         maximum_count_of_any_value: Some(4 * num_decks),
     }
 }
 
-pub fn new_faceless_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
+pub fn new_faceless_random_shoe<'a>(num_decks: u32) -> GenericDirectShoe<'a> {
     let vp = RandomDeckValuePicker::new_faceless(num_decks);
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
-    for i in range (0, 13u) {
+    for i in range (0, 13) {
          match VALUES[i] {
-            TEN =>  sp.push(box RandomDeckSuitPicker::new(4 * 4 * num_decks)),
-            JACK =>  sp.push(box RandomDeckSuitPicker::new(0)),
-            QUEEN =>  sp.push(box RandomDeckSuitPicker::new(0)),
-            KING =>  sp.push(box RandomDeckSuitPicker::new(0)),
-            _ => sp.push(box RandomDeckSuitPicker::new(num_decks)),
+            TEN =>  sp.push(Box::new(RandomDeckSuitPicker::new(4 * 4 * num_decks))),
+            JACK =>  sp.push(Box::new(RandomDeckSuitPicker::new(0))),
+            QUEEN =>  sp.push(Box::new(RandomDeckSuitPicker::new(0))),
+            KING =>  sp.push(Box::new(RandomDeckSuitPicker::new(0))),
+            _ => sp.push(Box::new(RandomDeckSuitPicker::new(num_decks))),
         }
 
 /*         match VALUES[i] {
-            TEN =>  sp.push(box CycleSuitPicker::new()),
-            JACK =>  sp.push(box CycleSuitPicker::new()),
-            QUEEN =>  sp.push(box CycleSuitPicker::new()),
-            KING =>  sp.push(box CycleSuitPicker::new()),
-            _ => sp.push(box CycleSuitPicker::new()),
+            TEN =>  sp.push(Box::new(CycleSuitPicker::new()),
+            JACK =>  sp.push(Box::new(CycleSuitPicker::new()),
+            QUEEN =>  sp.push(Box::new(CycleSuitPicker::new()),
+            KING =>  sp.push(Box::new(CycleSuitPicker::new()),
+            _ => sp.push(Box::new(CycleSuitPicker::new()),
         }*/
     }
     GenericDirectShoe {
-        value_picker: box vp,
+        value_picker: Box::new(vp),
         suit_pickers: sp.into_boxed_slice(),
         initial_length: Some(num_decks * 52),
         maximum_count_of_any_value: Some(4 * 4 * num_decks),
@@ -406,16 +406,16 @@ pub fn new_faceless_random_shoe<'a>(num_decks: uint) -> GenericDirectShoe<'a> {
 pub fn new_infinite_shoe<'a>() -> GenericDirectShoe<'a> {
     let vp = RandomValuePicker;
     let mut sp : Vec<Box<SuitPicker>> = Vec::new();
-    for _ in range (0, 13u) {
-        sp.push(box RandomSuitPicker);
+    for _ in range (0, 13) {
+        sp.push(Box::new(RandomSuitPicker));
     }
     GenericDirectShoe {
-        value_picker: box vp,
+        value_picker: Box::new(vp),
         suit_pickers: sp.into_boxed_slice(),
         initial_length: None,
         maximum_count_of_any_value: None,
     }
-    //GenericDirectShoe::new(box vp, sp.into_boxed_slice())
+    //GenericDirectShoe::new(Box::new(vp, sp.into_boxed_slice())
 }
 
 #[test]
@@ -431,7 +431,7 @@ fn test_cycle_suit_picker() {
     use std::collections::HashSet;
     let mut s = CycleSuitPicker::new();
     let mut set = HashSet::new();
-    for _ in range(0, 4u) {
+    for _ in range(0, 4) {
         match s.suit() {
             Some(i) => {set.insert(i.index());()}
             None => panic!("Should not panic!"),

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 pub trait HashDatabase {
     fn get(&self, hash: &Vec<u8>) -> Option<f64>;
     fn store(&mut self, hash: &Vec<u8>, value: f64) -> Option<f64>;
-    fn len(&self) -> uint;
+    fn len(&self) -> u32;
 }
 
 pub struct InMemoryHashDatabase {
@@ -28,8 +28,8 @@ impl HashDatabase for InMemoryHashDatabase {
     fn store(&mut self, hash: &Vec<u8>, value: f64) -> Option<f64> {
         self.db.insert(hash.clone(), value)
     }
-    fn len(&self) -> uint {
-        self.db.len()
+    fn len(&self) -> u32 {
+        self.db.len() as u32
     }
 }
 
@@ -43,7 +43,7 @@ impl HashDatabase for NoOpDatabase {
     fn store(&mut self, _: &Vec<u8>, _: f64) -> Option<f64> {
         None
     }
-    fn len(&self) -> uint {
+    fn len(&self) -> u32 {
         0
     }
 }

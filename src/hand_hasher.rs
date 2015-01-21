@@ -30,15 +30,15 @@ pub struct DealerHandHasher;
 
 struct HashRange {
     // Should be inclusive (so 1 means 2 values (0 or 1))
-    max_value: uint,
+    max_value: u64,
     // Should be < max_value
-    current_value: uint,
+    current_value: u64,
 }
 
 //static biguintCache: Vec<int> = range(0, 10).map(|m| m).collect();
 
 impl HashRange {
-    pub fn new(max_value: uint, current_value: uint) -> HashRange {
+    pub fn new(max_value: u64, current_value: u64) -> HashRange {
         assert!(max_value > 1); // if the max_value == 1, then omit the dimension
         assert!(current_value < max_value);
         HashRange {
@@ -59,7 +59,7 @@ fn create_hash(ranges: &[HashRange]) -> Vec<u8> {
             (i.max_value - 1);
     }
     let mut bv = Bitv::from_elem(bits_required.bits(), false);
-    let mut current_bit = 0u;
+    let mut current_bit = 0;
     while !val.is_zero() {
         bv.set(current_bit, val.is_odd());
         current_bit += 1;
@@ -79,11 +79,11 @@ impl HandHasher for DealerHandHasher {
         }
         let cards_in_hand_hash = HashRange::new(3, {
             if hand.len() == 1 {
-                0u
+                0 
             } else if hand.len() == 2 {
-                1u
+                1
             } else {
-                2u
+                2
             }
         });
 
@@ -91,7 +91,7 @@ impl HandHasher for DealerHandHasher {
         assert!(score <= 22);
         create_hash(&[
                     cards_in_hand_hash,
-                    HashRange::new(23, score),
+                    HashRange::new(23, score as u64),
                     HashRange::new(2,
         // Treat soft 17 same as hard 17 if the dealer stands on both
                                    match hand.is_soft() &&
@@ -119,7 +119,7 @@ impl HandHasher for HandScoreHasher {
 
         // Hash together the score and softness
         assert!(score <= 22);
-        create_hash(&[HashRange::new(23, score)])
+        create_hash(&[HashRange::new(23, score as u64)])
     }
     fn hash_hand_ignore_actions(&self, rules: &BJRules, hand: &BJHand) -> Vec<u8> {
         self.hash_hand(rules, hand)
@@ -160,22 +160,22 @@ impl PlayerHandHasher {
         });*/
 
         let mut v = Vec::with_capacity(10);
-        v.push(HashRange::new(23, score));
+        v.push(HashRange::new(23, score as u64));
         v.push(is_soft);
         if rules.max_doubles_single_hand() > 0 {
             v.push(HashRange::new(
-                rules.max_doubles_single_hand() + 1,
-                hand.double_count())
+                rules.max_doubles_single_hand() as u64 + 1u64,
+                hand.double_count() as u64)
             );
         }
 
         if rules.split_limit() > 0 {
             v.push(HashRange::new(
-                rules.split_limit() + 1,
-                hand.splits_done()));
+                rules.split_limit() as u64 + 1,
+                hand.splits_done() as u64));
             v.push(HashRange::new(
-                rules.split_limit() + 1,
-                hand.splits_to_solve()));
+                rules.split_limit() as u64 + 1,
+                hand.splits_to_solve() as u64));
         }
         if include_actions {
             let actions = [STAND, HIT, DOUBLE, SPLIT, SURRENDER];
@@ -212,7 +212,7 @@ impl DeckHasher for SuitlessDeckHasher {
             None => vec![0],
             Some(s) => {
                 let v: Vec<HashRange> = VALUES.iter().map(
-                    |v| HashRange::new(s+1, shoe.count(v))).collect();
+                    |v| HashRange::new(s as u64 + 1u64, shoe.count(v) as u64)).collect();
                 create_hash(v.as_slice())
             }
         }
@@ -294,7 +294,7 @@ mod tests {
 
     fn ensure_equal_values(hasher: &HandHasher, rules: &BJRules, h1: Vec<Value>, h2: Vec<Value>) {
         let mut shoe = new_infinite_shoe();
-        println!("Checking {} vs {}", h1, h2);
+        println!("Checking {:?} vs {:?}", h1, h2);
 
         assert_eq!(
             hasher.hash_hand(rules,
@@ -305,7 +305,7 @@ mod tests {
 
     fn ensure_not_equal_values(hasher: &HandHasher, rules: &BJRules, h1: Vec<Value>, h2: Vec<Value>) {
         let mut shoe = new_infinite_shoe();
-        println!("Checking {} vs {}", h1, h2);
+        println!("Checking {:?} vs {:?}", h1, h2);
 
         assert!(
             hasher.hash_hand(rules,

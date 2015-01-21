@@ -36,5 +36,5 @@ fn test_colors() {
     assert_eq!(RED, RED);
     assert_eq!("red", RED.desc());
     assert_eq!("black", BLACK.desc());
-    println!("{}", RED);
+    println!("{:?}", RED);
 }

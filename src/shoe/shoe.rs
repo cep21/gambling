@@ -4,14 +4,14 @@ use cards::card::Card;
 
 pub trait DirectShoe {
     fn pop(&mut self) -> Option<Card>;
-    fn len(&self) -> uint;
-    fn count(&self, v: &Value) -> uint;
+    fn len(&self) -> usize;
+    fn count(&self, v: &Value) -> u32;
     fn remove(&mut self, v: &Value) -> Option<Card>;
     fn insert(&mut self, v: &Card);
     // No initial length means the deck has no initial length: is infinite
-    fn initial_length(&self) -> Option<uint>;
+    fn initial_length(&self) -> Option<u32>;
     // No count means the deck has no initial length: is infinite
-    fn maximum_count_of_any_value(&self) -> Option<uint>;
+    fn maximum_count_of_any_value(&self) -> Option<u32>;
 }
 
 pub fn fmt(d: &DirectShoe) -> String {
@@ -36,7 +36,7 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
     {
         let mut ace_suit_tracking_set = HashSet::new();
         // Make sure there are 4 aces
-        for i in range(0, 4u) {
+        for i in range(0, 4) {
             println!("Removing one ace");
             match ds.remove(&ACE) {
                 Some(c) => {
@@ -72,8 +72,8 @@ pub fn test_single_deck(ds: &mut DirectShoe) {
         }
     }
     println!("Looping");
-    let mut num_4 = 0i;
-    let mut count = 0i;
+    let mut num_4 = 0;
+    let mut count = 0;
     let mut suit_tracking_count = HashSet::new();
     let value_to_track = value::FIVE;
     assert_eq!(4, ds.count(&value_to_track));

@@ -5,18 +5,18 @@ use shoe::shoe::DirectShoe;
 
 pub struct DirectActualShoe<'a> {
     pub cards: &'a mut Vec<Card>,
-    pub initial_length: Option<uint>,
-    pub maximum_count_of_any_value: Option<uint>,
+    pub initial_length: Option<u32>,
+    pub maximum_count_of_any_value: Option<u32>,
 }
 
 impl <'a>DirectShoe for DirectActualShoe<'a> {
     fn pop(&mut self) -> Option<Card> {
         return self.cards.pop();
     }
-    fn len(&self) -> uint {
+    fn len(&self) -> usize {
         return self.cards.len();
     }
-    fn count(&self, v: &value::Value) -> uint {
+    fn count(&self, v: &value::Value) -> u32 {
         let mut r = 0;
         for c in self.cards.iter() {
             if c.value().index() == v.index() {
@@ -36,10 +36,10 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
     fn insert(&mut self, v: &Card) {
         self.cards.push((*v).clone());
     }
-    fn initial_length(&self) -> Option<uint> {
+    fn initial_length(&self) -> Option<u32> {
         self.initial_length
     }
-    fn maximum_count_of_any_value(&self) -> Option<uint> {
+    fn maximum_count_of_any_value(&self) -> Option<u32> {
         self.maximum_count_of_any_value
     }
 }
@@ -47,7 +47,7 @@ impl <'a>DirectShoe for DirectActualShoe<'a> {
 impl <'a> DirectActualShoe<'a> {
     pub fn new(v: &'a mut Vec<Card>) -> DirectActualShoe<'a> {
         return DirectActualShoe{
-            initial_length: Some(v.len()),
+            initial_length: Some(v.len() as u32),
             maximum_count_of_any_value: Some(0),
             cards: v,
         }

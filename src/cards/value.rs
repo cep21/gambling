@@ -3,7 +3,7 @@ use std::fmt;
 #[derive(Clone, Copy)]
 pub struct Value {
     desc: &'static str,
-    i: uint,
+    i: usize,
     c: char,
 }
 
@@ -11,7 +11,7 @@ impl Value {
     pub fn desc(&self) -> &str {
         return self.desc;
     }
-    pub fn index(&self) -> uint {
+    pub fn index(&self) -> usize {
         return self.i;
     }
     pub fn char(&self) -> char {
@@ -65,5 +65,5 @@ fn test_suits() {
     assert_eq!("king", KING.desc());
     assert_eq!(12, KING.index());
     assert_eq!(KING, KING);
-    println!("{}", KING);
+    println!("{:?}", KING);
 }

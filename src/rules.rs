@@ -11,9 +11,9 @@ use bjaction::BJAction::SPLIT;
 #[derive(Copy)]
 pub struct BJRules{
     can_surrender: bool,
-    split_limit: uint,
+    split_limit: u32,
     hit_s17: bool,
-    max_doubles_single_hand: uint,
+    max_doubles_single_hand: u32,
     resplit_aces: bool,
     draw_on_split_aces: bool,
     double_after_split: bool,
@@ -27,8 +27,8 @@ impl BJRules {
         BJRules::new_complex(false, 3, false, 1, false, false, true)
     }
 
-    pub fn new_complex(can_surrender: bool, split_limit: uint, hit_s17: bool,
-                       max_doubles_single_hand: uint, resplit_aces: bool,
+    pub fn new_complex(can_surrender: bool, split_limit: u32, hit_s17: bool,
+                       max_doubles_single_hand: u32, resplit_aces: bool,
                        draw_on_split_aces: bool,
                        double_after_split: bool) -> BJRules {
         BJRules {
@@ -57,7 +57,7 @@ impl BJRules {
             h.double_count() < self.max_doubles_single_hand
     }
 
-    pub fn max_doubles_single_hand(&self) -> uint {
+    pub fn max_doubles_single_hand(&self) -> u32 {
         self.max_doubles_single_hand
     }
 
@@ -93,7 +93,7 @@ impl BJRules {
             && h.cards()[0].value() == h.cards()[1].value()
     }
 
-    pub fn split_limit(&self) -> uint {
+    pub fn split_limit(&self) -> u32 {
         self.split_limit
     }
 
@@ -105,7 +105,7 @@ impl BJRules {
         h.score() < 17 || (self.hit_s17 && h.score() == 17 && h.is_soft())
     }
 
-    pub fn dealer_hits_soft_score(&self, score: uint) -> bool {
+    pub fn dealer_hits_soft_score(&self, score: u32) -> bool {
         score < 17 || (self.hit_s17 && score == 17)
     }
 
@@ -113,7 +113,7 @@ impl BJRules {
         1.5
     }
 
-    pub fn automatic_win_at_hand_length(&self) -> uint {
+    pub fn automatic_win_at_hand_length(&self) -> u32 {
         0
     }
 
